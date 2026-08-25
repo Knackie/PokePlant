@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "PokePlant",
+    "slug": "pokeplant",
+    "scheme": "pokeplant",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "bundleIdentifier": "com.example.pokeplant"
+    },
+    "android": {
+      "package": "com.example.pokeplant"
+    }
+  }
+}
