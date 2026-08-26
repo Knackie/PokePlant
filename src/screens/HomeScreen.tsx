@@ -28,7 +28,9 @@ export function HomeScreen({ navigation }: Props) {
       <View style={styles.hero}>
         <Text style={styles.badge}>PokePlant</Text>
         <Text style={styles.title}>Collectionne des plantes comme un vrai dresseur.</Text>
-        <Text style={styles.subtitle}>Explore les espèces, ouvre leurs fiches et garde tes favorites.</Text>
+        <Text style={styles.subtitle}>
+          Explore les espèces, ouvre leurs fiches et garde tes favorites.
+        </Text>
       </View>
 
       <SearchBar value={query} onChangeText={setQuery} onClear={() => setQuery('')} />
@@ -39,14 +41,20 @@ export function HomeScreen({ navigation }: Props) {
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.filters}
-        renderItem={({ item }) => <FilterChip label={item} selected={item === family} onPress={() => setFamily(item)} />}
+        renderItem={({ item }) => (
+          <FilterChip label={item} selected={item === family} onPress={() => setFamily(item)} />
+        )}
       />
 
       <View style={styles.toolbar}>
         <Text style={styles.sectionTitle}>{filteredPlants.length} plantes</Text>
         <View style={styles.actions}>
-          <Pressable onPress={() => navigation.navigate('Favorites')}><Text style={styles.toolbarAction}>Favoris</Text></Pressable>
-          <Pressable onPress={() => navigation.navigate('Settings')}><Text style={styles.toolbarAction}>Réglages</Text></Pressable>
+          <Pressable onPress={() => navigation.navigate('Favorites')}>
+            <Text style={styles.toolbarAction}>Favoris</Text>
+          </Pressable>
+          <Pressable onPress={() => navigation.navigate('Settings')}>
+            <Text style={styles.toolbarAction}>Réglages</Text>
+          </Pressable>
         </View>
       </View>
 
@@ -62,7 +70,12 @@ export function HomeScreen({ navigation }: Props) {
           />
         )}
         contentContainerStyle={styles.list}
-        ListEmptyComponent={<View style={styles.emptyState}><Text style={styles.emptyTitle}>Aucune plante trouvée</Text><Text style={styles.emptyText}>Essaie un autre mot-clé ou supprime le filtre.</Text></View>}
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyTitle}>Aucune plante trouvée</Text>
+            <Text style={styles.emptyText}>Essaie un autre mot-clé ou supprime le filtre.</Text>
+          </View>
+        }
         showsVerticalScrollIndicator={false}
       />
     </View>
@@ -70,18 +83,72 @@ export function HomeScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: spacing.lg, backgroundColor: colors.background },
-  hero: { marginBottom: spacing.lg },
-  badge: { color: colors.primary, fontWeight: '800', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: spacing.xs },
-  title: { fontSize: typography.title, fontWeight: '900', color: colors.text, lineHeight: 34 },
-  subtitle: { marginTop: spacing.sm, color: colors.muted, fontSize: typography.body, lineHeight: 22 },
-  filters: { gap: spacing.sm, paddingVertical: spacing.md },
-  toolbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.md },
-  actions: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  sectionTitle: { fontSize: typography.subheadline, fontWeight: '800', color: colors.text },
-  toolbarAction: { color: colors.primary, fontWeight: '700' },
-  list: { paddingBottom: spacing.xl },
-  emptyState: { paddingVertical: spacing.xxl, alignItems: 'center' },
-  emptyTitle: { fontSize: typography.subheadline, fontWeight: '800', color: colors.text },
-  emptyText: { marginTop: spacing.xs, color: colors.muted, textAlign: 'center' },
+  container: {
+    flex: 1,
+    padding: spacing.lg,
+    backgroundColor: colors.background,
+  },
+  hero: {
+    marginBottom: spacing.lg,
+  },
+  badge: {
+    color: colors.primary,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: spacing.xs,
+  },
+  title: {
+    fontSize: typography.title,
+    fontWeight: '900',
+    color: colors.text,
+    lineHeight: 34,
+  },
+  subtitle: {
+    marginTop: spacing.sm,
+    color: colors.muted,
+    fontSize: typography.body,
+    lineHeight: 22,
+  },
+  filters: {
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+  },
+  toolbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
+  actions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  sectionTitle: {
+    fontSize: typography.subheadline,
+    fontWeight: '800',
+    color: colors.text,
+  },
+  toolbarAction: {
+    color: colors.primary,
+    fontWeight: '700',
+  },
+  list: {
+    paddingBottom: spacing.xl,
+  },
+  emptyState: {
+    paddingVertical: spacing.xxl,
+    alignItems: 'center',
+  },
+  emptyTitle: {
+    fontSize: typography.subheadline,
+    fontWeight: '800',
+    color: colors.text,
+  },
+  emptyText: {
+    marginTop: spacing.xs,
+    color: colors.muted,
+    textAlign: 'center',
+  },
 });

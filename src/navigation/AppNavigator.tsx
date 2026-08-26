@@ -15,16 +15,47 @@ export function AppNavigator() {
   return (
     <Stack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: colors.surface },
+        headerStyle: {
+          backgroundColor: colors.surface,
+        },
         headerTintColor: colors.text,
-        headerTitleStyle: { fontSize: typography.subheadline, fontWeight: '700' },
-        contentStyle: { backgroundColor: colors.background },
+        headerTitleStyle: {
+          fontSize: typography.subheadline,
+          fontWeight: '700',
+        },
+        contentStyle: {
+          backgroundColor: colors.background,
+        },
       }}
     >
-      <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'PokePlant' }} />
-      <Stack.Screen name="PlantDetail" component={PlantDetailScreen} options={{ title: 'Détail' }} />
-      <Stack.Screen name="Favorites" component={FavoritesScreen} options={{ title: 'Favoris' }} />
-      <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Réglages' }} />
+      <Stack.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{
+          title: 'PokePlant',
+        }}
+      />
+      <Stack.Screen
+        name="PlantDetail"
+        component={PlantDetailScreen}
+        options={{
+          title: 'Détail',
+        }}
+      />
+      <Stack.Screen
+        name="Favorites"
+        component={FavoritesScreen}
+        options={{
+          title: 'Favoris',
+        }}
+      />
+      <Stack.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{
+          title: 'Réglages',
+        }}
+      />
     </Stack.Navigator>
   );
 }

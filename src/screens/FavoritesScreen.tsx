@@ -17,7 +17,12 @@ export function FavoritesScreen({ navigation }: Props) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Tes plantes favorites</Text>
-      <Text style={styles.subtitle}>{favorites.length === 0 ? 'Ajoute des plantes depuis la liste principale.' : 'Retrouve ici toutes les plantes que tu as marquées.'}</Text>
+      <Text style={styles.subtitle}>
+        {favorites.length === 0
+          ? 'Ajoute des plantes depuis la liste principale.'
+          : 'Retrouve ici toutes les plantes que tu as marquées.'}
+      </Text>
+
       <FlatList
         data={favorites}
         keyExtractor={(item) => item.id}
@@ -30,7 +35,11 @@ export function FavoritesScreen({ navigation }: Props) {
           />
         )}
         contentContainerStyle={styles.list}
-        ListEmptyComponent={<View style={styles.emptyState}><Text style={styles.emptyTitle}>Aucun favori pour l’instant</Text></View>}
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyTitle}>Aucun favori pour l’instant</Text>
+          </View>
+        }
         showsVerticalScrollIndicator={false}
       />
     </View>
@@ -38,10 +47,31 @@ export function FavoritesScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: spacing.lg, backgroundColor: colors.background },
-  title: { fontSize: typography.headline, fontWeight: '900', color: colors.text },
-  subtitle: { marginTop: spacing.xs, marginBottom: spacing.lg, color: colors.muted, lineHeight: 22 },
-  list: { paddingBottom: spacing.xl },
-  emptyState: { marginTop: spacing.xxl, alignItems: 'center' },
-  emptyTitle: { color: colors.muted, fontWeight: '700' },
+  container: {
+    flex: 1,
+    padding: spacing.lg,
+    backgroundColor: colors.background,
+  },
+  title: {
+    fontSize: typography.headline,
+    fontWeight: '900',
+    color: colors.text,
+  },
+  subtitle: {
+    marginTop: spacing.xs,
+    marginBottom: spacing.lg,
+    color: colors.muted,
+    lineHeight: 22,
+  },
+  list: {
+    paddingBottom: spacing.xl,
+  },
+  emptyState: {
+    marginTop: spacing.xxl,
+    alignItems: 'center',
+  },
+  emptyTitle: {
+    color: colors.muted,
+    fontWeight: '700',
+  },
 });

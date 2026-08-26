@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+
 import { Plant } from '../types/plant';
 
 type FavoritesContextValue = {
@@ -15,7 +16,11 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   const toggleFavorite = useCallback((plant: Plant) => {
     setFavorites((current) => {
       const alreadyFavorite = current.some((item) => item.id === plant.id);
-      if (alreadyFavorite) return current.filter((item) => item.id !== plant.id);
+
+      if (alreadyFavorite) {
+        return current.filter((item) => item.id !== plant.id);
+      }
+
       return [plant, ...current];
     });
   }, []);
@@ -26,7 +31,11 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   );
 
   const value = useMemo(
-    () => ({ favorites, toggleFavorite, isFavorite }),
+    () => ({
+      favorites,
+      toggleFavorite,
+      isFavorite,
+    }),
     [favorites, toggleFavorite, isFavorite]
   );
 
@@ -35,6 +44,10 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
 
 export function useFavorites() {
   const context = useContext(FavoritesContext);
-  if (!context) throw new Error('useFavorites must be used within a FavoritesProvider');
+
+  if (!context) {
+    throw new Error('useFavorites must be used within a FavoritesProvider');
+  }
+
   return context;
 }
