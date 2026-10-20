@@ -10,6 +10,9 @@ import { explorerName } from '../lib/account';
 export function Profile({ user, captures, onAuth }: { user: User | null; captures: Capture[]; onAuth: () => void }) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
+  const [notice, setNotice] = useState('');
   const [confirm, setConfirm] = useState(false);
   const [confirmation, setConfirmation] = useState('');
   const stats = progression(captures);
@@ -19,6 +22,18 @@ export function Profile({ user, captures, onAuth }: { user: User | null; capture
     try {
       const { error } = await requireSupabase().auth.signOut();
       if (error) throw error;
+    } catch (error) { setError(await functionError(error)); }
+    finally { setBusy(false); }
+  }
+  async function saveName(event: FormEvent) {
+    event.preventDefault();
+    const name = nameDraft.trim().replace(/\s+/g, ' ');
+    if (name.length < 2 || name.length > 30) { setError('Choisis un nom de 2 à 30 caractères.'); return; }
+    setBusy(true); setError(''); setNotice('');
+    try {
+      const { error } = await requireSupabase().auth.updateUser({ data: { display_name: name } });
+    if (error) throw error;
+      setEditing(false); setNotice('Nom enregistré !');
     } catch (error) { setError(await functionError(error)); }
     finally { setBusy(false); }
   }
@@ -43,7 +58,7 @@ export function Profile({ user, captures, onAuth }: { user: User | null; capture
     finally { setBusy(false); }
   }
   return <div className="profile-grid">
-    <section className="panel profile-card"><div className="profile-avatar"><UserRound size={38} /></div><span className="eyebrow">CARTE D’EXPLORATEUR</span><h2>{displayName}</h2><p className="muted">{user?.email || 'Chaque grande aventure commence par une petite pousse.'}</p><span className="level-pill">Niveau {stats.level} · {stats.xp} XP</span><div className="profile-stats"><div><strong>{stats.species}</strong><span>espèces</span></div><div><strong>{stats.families}</strong><span>familles</span></div></div>{!user && <button className="button primary full" onClick={onAuth}>Créer mon compte gratuit</button>}</section>
+    <section className="panel profile-card"><div className="profile-avatar"><UserRound size={38} /></div><span className="eyebrow">CARTE D’EXPLORATEUR</span><h2>{displayName}</h2>{user && !editing && <button className="text-button" onClick={() => { setNameDraft(displayName === 'Explorateur' ? '' : displayName); setError(''); setNotice(''); setEditing(true); }}>Changer mon nom</button>}{editing && <form className="form-stack" onSubmit={saveName}><label>Nouveau nom<input value={nameDraft} onChange={(event) => setNameDraft(event.target.value)} minLength={2} maxLength={30} required autoComplete="nickname" disabled={busy} /></label><button className="button primary" disabled={busy}>{busy ? 'Enregistrement…' : 'Enregistrer'}</button><button type="button" className="text-button" onClick={() => setEditing(false)} disabled={busy}>Annuler</button></form>}{notice && <p role="status" className="success-box">{notice}</p>}{editing && error && <p role="alert" className="error-box">{error}</p>}<p className="muted">{user?.email || 'Chaque grande aventure commence par une petite pousse.'}</p><span className="level-pill">Niveau {stats.level} · {stats.xp} XP</span><div className="profile-stats"><div><strong>{stats.species}</strong><span>espèces</span></div><div><strong>{stats.families}</strong><span>familles</span></div></div>{!user && <button className="button primary full" onClick={onAuth}>Créer mon compte gratuit</button>}</section>
     <section className="panel settings-card"><h3>Ton jardin, tes données</h3><div className="privacy-note"><ShieldCheck size={24} /><p>Seul ton compte a accès à tes photos et à ta collection. Aucun classement public, aucune publicité.</p></div>
       <p className="muted">L’export JSON contient les informations de tes découvertes, pas les fichiers photo. Conserve les originaux de tes photos sur ton appareil.</p>
       <button className="settings-action" onClick={exportData} disabled={!user || busy}><Download size={20} /><span>Exporter mes découvertes<small>Télécharger mon carnet au format JSON</small></span></button>
