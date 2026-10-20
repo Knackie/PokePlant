@@ -21,9 +21,9 @@ La suppression complète d’un compte et l’isolation entre deux comptes reste
 
 ## Ce qui est inclus
 
-- Accueil « carnet d’explorateur », 8 fiches botaniques de départ, recherche sans accents et filtres.
-- Captures de **toute espèce reconnue**, pas seulement les 8 fiches de départ.
-- Photo depuis l’appareil ou la galerie ; conversion JPEG, réduction à 1600 px maximum et retrait des métadonnées avant envoi.
+- Accueil « carnet d’explorateur », 37 fiches botaniques de départ, recherche sans accents et filtres.
+- Captures de **toute espèce reconnue**, pas seulement les 37 fiches de départ.
+- Photo prise avec l’appareil photo uniquement (pas d’import depuis la galerie) ; conversion JPEG, réduction à 1600 px maximum et retrait des métadonnées avant envoi.
 - Consentement à l’envoi vers Pl@ntNet, jusqu’à 5 suggestions et confirmation explicite. Aucune identification fictive.
 - Connexion Google et comptes e-mail/mot de passe, confirmation par mail et réinitialisation via Supabase.
 - Collection et photos privées, synchronisées entre appareils par Supabase avec politiques d’accès côté serveur.

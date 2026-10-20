@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Camera, Check, ChevronRight, ImagePlus, Leaf, LoaderCircle, RefreshCw, ShieldCheck, Sparkles } from 'lucide-react';
+import { Camera, Check, ChevronRight, Leaf, LoaderCircle, RefreshCw, ShieldCheck, Sparkles } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 import type { Candidate, Capture } from '../types';
 import { preparePhoto } from '../lib/photos';
@@ -19,7 +19,6 @@ export function Scanner({ user, captures, onAuth, onSaved, online }: { user: Use
   const [saved, setSaved] = useState(false);
   const [phase, setPhase] = useState('');
   const camera = useRef<HTMLInputElement>(null);
-  const library = useRef<HTMLInputElement>(null);
   const mounted = useRef(true);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   useEffect(() => {
@@ -72,9 +71,8 @@ export function Scanner({ user, captures, onAuth, onSaved, online }: { user: Use
       <h2>{saved ? 'Une nouvelle rencontre !' : 'Une photo. Une découverte.'}</h2>
       <p className="muted">Approche-toi, cadre une seule plante et laisse la nature te surprendre.</p>
       <input ref={camera} className="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" aria-label="Photographier une plante" disabled={busy || saved} onChange={(event) => { void choose(event.target.files?.[0]); event.target.value = ''; }} />
-      <input ref={library} className="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp" aria-label="Importer une photo de plante" disabled={busy || saved} onChange={(event) => { void choose(event.target.files?.[0]); event.target.value = ''; }} />
       {url ? <div className="photo-preview"><img src={url} alt="La plante à identifier" /><span><Leaf size={15} /> Ta rencontre du jour</span></div> : <div className="camera-placeholder"><div className="focus-corners"><Camera size={46} strokeWidth={1.1} /></div><strong>Qu’est-ce qui pousse par ici ?</strong><p>Une feuille, une fleur, une nouvelle aventure.</p></div>}
-      {!saved && <div className="photo-actions"><button className="button primary" onClick={() => camera.current?.click()} disabled={busy}><Camera size={18} />{photo ? 'Reprendre' : 'Prendre une photo'}</button><button className="button secondary" onClick={() => library.current?.click()} disabled={busy}><ImagePlus size={18} />Importer</button></div>}
+      {!saved && <div className="photo-actions"><button className="button primary" onClick={() => camera.current?.click()} disabled={busy}><Camera size={18} />{photo ? 'Reprendre' : 'Prendre une photo'}</button></div>}
       {photo && !candidates.length && !saved && <div className="form-stack scan-form">
         <label>Que voit-on sur la photo ?<select value={organ} onChange={(event) => setOrgan(event.target.value)} disabled={busy}><option value="auto">Laisser le scanner choisir</option><option value="leaf">Une feuille</option><option value="flower">Une fleur</option><option value="fruit">Un fruit</option><option value="bark">De l’écorce</option></select></label>
         <label className="checkbox-label"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} disabled={busy} /><span>J’accepte d’envoyer cette photo à Pl@ntNet pour l’identifier. Je n’inclus ni visage ni information personnelle.</span></label>
