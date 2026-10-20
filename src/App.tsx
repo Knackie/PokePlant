@@ -116,7 +116,7 @@ export default function App() {
   }
 
   const collectedKeys = new Set(captures.map((capture) => speciesKey(capture.scientific_name)));
-  const photoByKey = new Map(captures.map((capture) => [speciesKey(capture.scientific_name), capture.photoUrl]));
+  const photoByKey = new globalThis.Map(captures.map((capture): [string, string | undefined] => [speciesKey(capture.scientific_name), capture.photoUrl]));
   const visibleCatalog = catalog.filter((plant) => searchMatches([plant.name, plant.scientificName, plant.family], query) && (filter === 'all' || (filter === 'collected') === collectedKeys.has(speciesKey(plant.scientificName))));
   const extraCaptures = captures.filter((capture) => !catalog.some((plant) => speciesKey(plant.scientificName) === speciesKey(capture.scientific_name)) && filter !== 'discover' && searchMatches([capture.common_name, capture.scientific_name, capture.family], query));
 
