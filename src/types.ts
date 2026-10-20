@@ -18,6 +18,15 @@ export interface Capture {
   photoUrl?: string;
 }
 
+export interface LeaderboardRow {
+  rank: number;
+  display_name: string;
+  species: number;
+  xp: number;
+  level: number;
+  is_me: boolean;
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -27,9 +36,17 @@ export interface Database {
         Update: never;
         Relationships: [];
       };
+      leaderboard_profiles: {
+        Row: { user_id: string; display_name: string; updated_at: string };
+        Insert: { user_id: string; display_name: string };
+        Update: { display_name?: string };
+        Relationships: [];
+      };
     };
     Views: { [_ in never]: never };
-    Functions: { [_ in never]: never };
+    Functions: {
+      get_leaderboard: { Args: Record<string, never>; Returns: LeaderboardRow[] };
+    };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };
   };

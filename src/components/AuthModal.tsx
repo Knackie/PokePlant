@@ -59,8 +59,8 @@ export function AuthModal({ onClose }: { onClose: () => void }) {
       {mode !== 'reset' && <><button className="button secondary full" onClick={googleSignIn} disabled={busy}><UserRound size={18} />Continuer avec Google</button><div className="auth-separator"><span>ou avec ton e-mail</span></div></>}
       {mode !== 'reset' && <div className="segmented"><button className={mode === 'signup' ? 'selected' : ''} onClick={() => changeMode('signup')} disabled={busy}>Créer un compte</button><button className={mode === 'login' ? 'selected' : ''} onClick={() => changeMode('login')} disabled={busy}>Se connecter</button></div>}
       <form onSubmit={submit} className="form-stack">
-        {mode === 'signup' && <label>Ton nom d’explorateur<input autoComplete="nickname" value={name} onChange={(event) => setName(event.target.value)} minLength={2} maxLength={32} required placeholder="Camille" /></label>}
-        <label>Adresse e-mail<input type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="toi@exemple.fr" /></label>
+        {mode === 'signup' && <label>Ton nom d’explorateur<input autoComplete="nickname" value={name} onChange={(event) => setName(event.target.value)} minLength={2} maxLength={32} required placeholder="Chloé" /></label>}
+        <label>Adresse e-mail<input type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="tortue@gmail.com" /></label>
         {mode !== 'reset' && <label>Mot de passe<input type="password" autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} minLength={8} maxLength={128} required value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Au moins 8 caractères" /></label>}
         {mode === 'signup' && <p className="fine">Collection et photos privées. Aucun emplacement GPS enregistré. Tu peux exporter tes découvertes et supprimer ton compte depuis ton profil.</p>}
         {error && <p role="alert" className="error-box">{error}</p>}

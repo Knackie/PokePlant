@@ -10,6 +10,8 @@ Dans SQL Editor, exécuter une seule fois le contenu de
 `supabase/migrations/202610200001_pokeplant.sql`.
 Cette migration crée les captures, le bucket privé et les politiques d'accès par propriétaire. Elle ne doit pas être exécutée sur une base contenant déjà ces objets sans vérifier son état.
 
+Seconde migration : `supabase/migrations/202610200002_leaderboard.sql` (classement top 10 sur inscription volontaire : table `leaderboard_profiles` + fonction `get_leaderboard()`, réservée aux utilisateurs connectés).
+
 La fonction SQL de quota est réservée au rôle serveur : 20 essais par compte et par jour UTC, 450 pour tout le site. Une réservation compte même si le service externe échoue. Les compteurs anciens sont purgés après 7 jours.
 
 ## Fonctions Edge

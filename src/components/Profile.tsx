@@ -32,9 +32,9 @@ export function Profile({ user, captures, onAuth }: { user: User | null; capture
     setBusy(true); setError(''); setNotice('');
     try {
       const { error } = await requireSupabase().auth.updateUser({ data: { display_name: name } });
-    if (error) throw error;
-      setEditing(false); setNotice('Nom enregistré !');
-    } catch (error) { setError(await functionError(error)); }
+     if (error) throw error;
+     await requireSupabase().from('leaderboard_profiles').update({ display_name: name }).eq('user_id', user!.id); setNotice('Nom enregistré !');
+     setEditing(false); setNotice('Nom enregistré !'); setNotice('Nom enregistré !');    } catch (error) { setError(await functionError(error)); }
     finally { setBusy(false); }
   }
   function exportData() {
@@ -59,7 +59,7 @@ export function Profile({ user, captures, onAuth }: { user: User | null; capture
   }
   return <div className="profile-grid">
     <section className="panel profile-card"><div className="profile-avatar"><UserRound size={38} /></div><span className="eyebrow">CARTE D’EXPLORATEUR</span><h2>{displayName}</h2>{user && !editing && <button className="text-button" onClick={() => { setNameDraft(displayName === 'Explorateur' ? '' : displayName); setError(''); setNotice(''); setEditing(true); }}>Changer mon nom</button>}{editing && <form className="form-stack" onSubmit={saveName}><label>Nouveau nom<input value={nameDraft} onChange={(event) => setNameDraft(event.target.value)} minLength={2} maxLength={30} required autoComplete="nickname" disabled={busy} /></label><button className="button primary" disabled={busy}>{busy ? 'Enregistrement…' : 'Enregistrer'}</button><button type="button" className="text-button" onClick={() => setEditing(false)} disabled={busy}>Annuler</button></form>}{notice && <p role="status" className="success-box">{notice}</p>}{editing && error && <p role="alert" className="error-box">{error}</p>}<p className="muted">{user?.email || 'Chaque grande aventure commence par une petite pousse.'}</p><span className="level-pill">Niveau {stats.level} · {stats.xp} XP</span><div className="profile-stats"><div><strong>{stats.species}</strong><span>espèces</span></div><div><strong>{stats.families}</strong><span>familles</span></div></div>{!user && <button className="button primary full" onClick={onAuth}>Créer mon compte gratuit</button>}</section>
-    <section className="panel settings-card"><h3>Ton jardin, tes données</h3><div className="privacy-note"><ShieldCheck size={24} /><p>Seul ton compte a accès à tes photos et à ta collection. Aucun classement public, aucune publicité.</p></div>
+    <section className="panel settings-card"><h3>Ton jardin, tes données</h3><div className="privacy-note"><ShieldCheck size={24} /><p>Seul ton compte a accès à tes photos et à ta collection. Tu n’apparais au classement que si tu le choisis, sans photo. Aucune publicité.</p></div>
       <p className="muted">L’export JSON contient les informations de tes découvertes, pas les fichiers photo. Conserve les originaux de tes photos sur ton appareil.</p>
       <button className="settings-action" onClick={exportData} disabled={!user || busy}><Download size={20} /><span>Exporter mes découvertes<small>Télécharger mon carnet au format JSON</small></span></button>
       <button className="settings-action" onClick={signOut} disabled={!user || busy}><LogOut size={20} /><span>Me déconnecter<small>Ma collection restera sauvegardée</small></span></button>

@@ -219,3 +219,5 @@ footer > span:first-child { display: flex; align-items: center; gap: 6px; }foote
   .hero-art .orbit, .hero-art .art-cross { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
+
+.leaderboard { margin-top: 24px; }.leaderboard h3 { display: flex; align-items: center; gap: 8px; }.leaderboard-list { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 8px; }.leaderboard-list li { display: grid; grid-template-columns: 32px 1fr auto; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: #f4f1e6; }.leaderboard-list li.me { background: #dcebd0; outline: 2px solid var(--forest); }.leaderboard-list .rank { display: grid; place-items: center; font-weight: 700; }

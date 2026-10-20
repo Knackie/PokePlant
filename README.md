@@ -119,6 +119,6 @@ npm.cmd run icons
 - Pas de diagnostic de santé, de conseil médical, de garantie de comestibilité, d’entretien ni de fonctionnalités sociales.
 - Pas d’import HEIC : exporter les photos iPhone en JPEG si le navigateur ne les fournit pas déjà ainsi.
 - Une seule capture conservée par nom scientifique normalisé. Pl@ntNet peut utiliser des synonymes botaniques ; des noms distincts ne sont pas automatiquement fusionnés.
-- Jeu solo, pas de classement compétitif : l’utilisateur confirme une suggestion. Ce n’est pas un système anti-triche ni une base de preuves scientifiques.
+- Classement général (top 10 XP) sur inscription volontaire uniquement : sans anti-triche, l’utilisateur confirme une suggestion. Ce n’est pas une base de preuves scientifiques.
 - Les badges et XP sont calculés depuis la collection actuelle, pas depuis des événements historiques.
 - Ne pas cueillir les plantes pour jouer ; respecter les propriétés et espaces protégés.
