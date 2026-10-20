@@ -6,9 +6,9 @@ Le précédent prototype Expo a été remplacé par React + TypeScript + Vite. L
 
 ## Site en ligne
 
-[Ouvrir PokePlant](https://melodious-pegasus-01724c.netlify.app).
+[Ouvrir PokePlant](https://pokeplant.fr).
 
-Le site est publié sur Netlify depuis la branche `main`. Supabase Auth et les fonctions autorisent cette origine HTTPS ; les adresses locales restent disponibles pour le développement.
+Le site est publié sur Netlify depuis la branche `main` et servi sur `https://pokeplant.fr` (certificat HTTPS Let’s Encrypt géré par Netlify). L’ancienne adresse `https://melodious-pegasus-01724c.netlify.app` reste autorisée. Supabase Auth et les fonctions autorisent ces origines HTTPS ; les adresses locales restent disponibles pour le développement.
 
 Parcours validés le 20 octobre 2026 :
 
