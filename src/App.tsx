@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { ArrowDownToLine, ArrowRight, Award, BookOpen, Camera, Check, ChevronRight, Compass, Flower2, Leaf, LockKeyhole, Map, Search, ShieldCheck, Sparkles, Sprout, TreePine, Trophy, UserRound, WifiOff } from 'lucide-react';
+import { ArrowDownToLine, ArrowRight, Award, BookOpen, Camera, Check, ChevronRight, Compass, Crown, Flower2, Gem, Leaf, LockKeyhole, Map, Search, ShieldCheck, Sparkles, Sprout, Star, TreePine, Trophy, UserRound, WifiOff } from 'lucide-react';
 import { catalog } from './data';
 import { badges, progression, searchMatches, speciesKey, XP_PER_LEVEL } from './game';
 import type { Capture, CatalogPlant } from './types';
@@ -22,7 +22,7 @@ const navigation = [
   { id: 'badges', label: 'Mes badges', icon: Award },
   { id: 'profile', label: 'Mon profil', icon: UserRound },
 ] as const;
-const badgeIcons = { sprout: Sprout, leaf: Leaf, compass: Compass, flower: Flower2, tree: TreePine, award: Award };
+const badgeIcons = { sprout: Sprout, leaf: Leaf, compass: Compass, flower: Flower2, tree: TreePine, award: Award, star: Star, trophy: Trophy, crown: Crown, gem: Gem };
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('home');

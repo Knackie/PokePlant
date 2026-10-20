@@ -1,4 +1,4 @@
-# PokePlant
+﻿# PokePlant
 
 Une aventure botanique en français : photographie une plante, confirme une proposition de Pl@ntNet et ajoute une nouvelle espèce à ton Plantédex. Site web responsive installable comme une application (PWA), sans passer par une boutique.
 
@@ -27,7 +27,7 @@ La suppression complète d’un compte et l’isolation entre deux comptes reste
 - Consentement à l’envoi vers Pl@ntNet, jusqu’à 5 suggestions et confirmation explicite. Aucune identification fictive.
 - Connexion Google et comptes e-mail/mot de passe, confirmation par mail et réinitialisation via Supabase.
 - Collection et photos privées, synchronisées entre appareils par Supabase avec politiques d’accès côté serveur.
-- Une capture par espèce et par compte : **100 XP par nouvelle espèce**, **300 XP par niveau**, 6 badges.
+- Une capture par espèce et par compte : **100 XP par nouvelle espèce**, **300 XP par niveau**, 13 badges.
 - Export JSON du carnet (sans les fichiers photo), déconnexion et suppression du compte et des photos.
 - Manifest, icônes PNG et service worker : installation sur Android/ordinateur et ajout à l’écran d’accueil sur iOS.
 - Le service worker met seulement l’interface en cache, **jamais les réponses API ni les photos privées**. Internet reste nécessaire pour les comptes, les scans et la sauvegarde ; pas de capture hors ligne.

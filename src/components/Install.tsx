@@ -34,7 +34,7 @@ export function Install() {
       <p>Pas de boutique d’applications, pas de téléchargement payant. PokePlant s’installe depuis ton navigateur.</p>
       <div className="install-step"><Share size={23} /><div><strong>Sur iPhone ou iPad</strong><p>Ouvre le site dans Safari, touche Partager, puis « Sur l’écran d’accueil » et « Ajouter ».</p></div></div>
       <div className="install-step"><Download size={23} /><div><strong>Sur Android ou ordinateur</strong><p>Ouvre le menu de Chrome ou Edge, puis « Installer l’application » ou « Ajouter à l’écran d’accueil ».</p></div></div>
-      <p className="fine">L’installation nécessite le site servi en HTTPS (ou localhost pour le développement). Le scan et la sauvegarde demandent Internet.</p>
+      <p className="fine">L’installation se fait depuis le site en ligne. Le scan et la sauvegarde demandent Internet.</p>
       {error && <p role="alert" className="error-box">{error}</p>}
     </Modal>}
   </>;

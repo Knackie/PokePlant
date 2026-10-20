@@ -21,7 +21,7 @@ interface Badge {
   description: string;
   current: number;
   target: number;
-  icon: 'sprout' | 'leaf' | 'compass' | 'flower' | 'tree' | 'award';
+  icon: 'sprout' | 'leaf' | 'compass' | 'flower' | 'tree' | 'award' | 'star' | 'trophy' | 'crown' | 'gem';
 }
 
 export function badges(captures: Capture[]): Badge[] {
@@ -32,7 +32,14 @@ export function badges(captures: Capture[]): Badge[] {
     { id: 'families', name: 'Esprit curieux', description: 'Rencontrer 3 familles botaniques', current: families, target: 3, icon: 'compass' },
     { id: 'ten', name: 'Botaniste en herbe', description: 'Collectionner 10 espèces', current: species, target: 10, icon: 'flower' },
     { id: 'twentyfive', name: 'Gardien de la forêt', description: 'Collectionner 25 espèces', current: species, target: 25, icon: 'tree' },
+    { id: 'three', name: 'Premiers pas', description: 'Collectionner 3 espèces', current: species, target: 3, icon: 'sprout' },
+    { id: 'fifteen', name: 'Promeneur attentif', description: 'Collectionner 15 espèces', current: species, target: 15, icon: 'star' },
     { id: 'fifty', name: 'Grande expédition', description: 'Collectionner 50 espèces', current: species, target: 50, icon: 'award' },
+    { id: 'seventyfive', name: 'Explorateur confirmé', description: 'Collectionner 75 espèces', current: species, target: 75, icon: 'trophy' },
+    { id: 'hundred', name: 'Légende verte', description: 'Collectionner 100 espèces', current: species, target: 100, icon: 'crown' },
+    { id: 'families-5', name: 'Cartographe du vivant', description: 'Rencontrer 5 familles botaniques', current: families, target: 5, icon: 'compass' },
+    { id: 'families-10', name: 'Grand herboriste', description: 'Rencontrer 10 familles botaniques', current: families, target: 10, icon: 'flower' },
+    { id: 'families-20', name: 'Encyclopédie vivante', description: 'Rencontrer 20 familles botaniques', current: families, target: 20, icon: 'gem' },
   ];
 }
 

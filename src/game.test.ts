@@ -21,11 +21,16 @@ describe('progression de l’explorateur', () => {
   it('normalise les familles et ignore les familles vides', () => {
     expect(progression([capture('a', ' Araceae '), capture('b', 'ARACEAE'), capture('c', '')]).families).toBe(1);
   });
-  it.each([1, 5, 10, 25, 50])('ne débloque le badge %i espèces qu’à son seuil', (target) => {
-    const badge = badges(collection(target)).find((badge) => badge.target === target && badge.id !== 'families')!;
+  it.each([1, 3, 5, 10, 15, 25, 50, 75, 100])('ne débloque le badge %i espèces qu’à son seuil', (target) => {
+    const badge = badges(collection(target)).find((badge) => badge.target === target && !badge.id.startsWith('families'))!;
     const before = badges(collection(target - 1)).find((item) => item.id === badge.id)!;
     expect(badge.current >= badge.target).toBe(true);
     expect(before.current >= before.target).toBe(false);
+  });
+  it.each([['families-5', 5], ['families-10', 10], ['families-20', 20]])('débloque %s à %i familles', (id, target) => {
+    const family = (count: number) => Array.from({ length: count }, (_, i) => capture(`Species ${i}`, `Family ${i}`));
+    const at = (count: number) => badges(family(count)).find((badge) => badge.id === id)!;
+    expect(at(target).current >= target).toBe(true); expect(at(target - 1).current >= target).toBe(false);
   });
   it('demande trois familles différentes pour Esprit curieux', () => {
     const two = badges([capture('a', 'X'), capture('b', 'Y'), capture('c', 'X')]).find((badge) => badge.id === 'families')!;
