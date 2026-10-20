@@ -1,26 +1,30 @@
 {
   "name": "pokeplant",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
-  "main": "node_modules/expo/AppEntry.js",
+  "type": "module",
   "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web"
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "typecheck": "tsc -b",
+    "icons": "node scripts/generate-icons.mjs",
+    "test": "vitest run"
   },
   "dependencies": {
-    "@react-navigation/native": "^7.0.0",
-    "@react-navigation/native-stack": "^7.0.0",
-    "expo": "^52.0.0",
-    "expo-status-bar": "~2.0.0",
-    "react": "18.3.1",
-    "react-native": "0.76.5",
-    "react-native-safe-area-context": "^5.0.0",
-    "react-native-screens": "^4.0.0"
+    "@supabase/supabase-js": "^2.95.0",
+    "lucide-react": "^0.468.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@types/react": "~18.3.12",
-    "typescript": "~5.6.3"
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/node": "^24.0.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "typescript": "~5.9.3",
+    "vite": "^7.3.0",
+    "vite-plugin-pwa": "^1.2.0",
+    "vitest": "^4.0.0"
   }
 }
