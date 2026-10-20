@@ -4,6 +4,21 @@ Une aventure botanique en français : photographie une plante, confirme une prop
 
 Le précédent prototype Expo a été remplacé par React + TypeScript + Vite. L’identité graphique et les illustrations SVG sont originales ; le projet n’est pas affilié à Pokémon.
 
+## Site en ligne
+
+[Ouvrir PokePlant](https://melodious-pegasus-01724c.netlify.app).
+
+Le site est publié sur Netlify depuis la branche `main`. Supabase Auth et les fonctions autorisent cette origine HTTPS ; les adresses locales restent disponibles pour le développement.
+
+Parcours validés le 20 octobre 2026 :
+
+- Compilation de production et 45 tests unitaires réussis.
+- Connexion Google, identification réelle et capture conservée après rechargement, confirmées par le propriétaire sur l’aperçu local.
+- Connexion Google sur le site public et récupération de la même collection sur téléphone, confirmées par le propriétaire.
+- Site public accessible en HTTPS et prérequêtes CORS des deux fonctions acceptées depuis son origine.
+
+La suppression complète d’un compte et l’isolation entre deux comptes restent à tester de bout en bout. Le parcours e-mail nécessite encore la configuration et la validation d’un SMTP pour une ouverture au public ; utiliser Google en attendant. Vérifier également les conditions et l’attribution Pl@ntNet avant une ouverture à grande échelle.
+
 ## Ce qui est inclus
 
 - Accueil « carnet d’explorateur », 8 fiches botaniques de départ, recherche sans accents et filtres.
