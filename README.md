@@ -10,14 +10,15 @@ Le précédent prototype Expo a été remplacé par React + TypeScript + Vite. L
 
 Le site est publié sur Netlify depuis la branche `main` et servi sur `https://pokeplant.fr` (certificat HTTPS Let’s Encrypt géré par Netlify). L’ancienne adresse `https://melodious-pegasus-01724c.netlify.app` reste autorisée. Supabase Auth et les fonctions autorisent ces origines HTTPS ; les adresses locales restent disponibles pour le développement.
 
-Parcours validés le 20 octobre 2026 :
+Parcours validés les 20 et 21 octobre 2026 :
 
-- Compilation de production et 45 tests unitaires réussis.
+- Compilation de production et 52 tests unitaires réussis.
 - Connexion Google, identification réelle et capture conservée après rechargement, confirmées par le propriétaire sur l’aperçu local.
 - Connexion Google sur le site public et récupération de la même collection sur téléphone, confirmées par le propriétaire.
+- Inscription par e-mail avec SMTP Resend et réception du mail de confirmation, confirmées par le propriétaire.
 - Site public accessible en HTTPS et prérequêtes CORS des deux fonctions acceptées depuis son origine.
 
-La suppression complète d’un compte et l’isolation entre deux comptes restent à tester de bout en bout. Le parcours e-mail nécessite encore la configuration et la validation d’un SMTP pour une ouverture au public ; utiliser Google en attendant. Vérifier également les conditions et l’attribution Pl@ntNet avant une ouverture à grande échelle.
+La suppression complète d’un compte et l’isolation entre deux comptes restent à tester de bout en bout. Vérifier également les conditions et l’attribution Pl@ntNet avant une ouverture à grande échelle.
 
 ## Ce qui est inclus
 
@@ -26,7 +27,8 @@ La suppression complète d’un compte et l’isolation entre deux comptes reste
 - Photo prise avec l’appareil photo uniquement (pas d’import depuis la galerie) ; conversion JPEG, réduction à 1600 px maximum et retrait des métadonnées avant envoi.
 - Consentement à l’envoi vers Pl@ntNet, jusqu’à 5 suggestions et confirmation explicite. Aucune identification fictive.
 - Connexion Google et comptes e-mail/mot de passe, confirmation par mail et réinitialisation via Supabase.
-- Collection et photos privées, synchronisées entre appareils par Supabase avec politiques d’accès côté serveur.
+- Collection synchronisée par Supabase et protégée côté serveur ; les photos ne sont accessibles qu’au propriétaire et à ses amis après acceptation.
+- Ajout d’amis par pseudo, demande à accepter, comparaison des niveaux/XP et consultation des plantes photographiées entre amis acceptés.
 - Une capture par espèce et par compte : **100 XP par nouvelle espèce**, **300 XP par niveau**, 13 badges.
 - Export JSON du carnet (sans les fichiers photo), déconnexion et suppression du compte et des photos.
 - Manifest, icônes PNG et service worker : installation sur Android/ordinateur et ajout à l’écran d’accueil sur iOS.

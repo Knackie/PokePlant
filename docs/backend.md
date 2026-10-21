@@ -12,6 +12,8 @@ Cette migration crée les captures, le bucket privé et les politiques d'accès 
 
 Seconde migration : `supabase/migrations/202610200002_leaderboard.sql` (classement top 10 sur inscription volontaire : table `leaderboard_profiles` + fonction `get_leaderboard()`, réservée aux utilisateurs connectés).
 
+Troisième migration : `supabase/migrations/202610210003_friends.sql` (profils et demandes d’amitié, progression entre amis et accès aux photos uniquement après acceptation). Les fonctions SQL contrôlent le compte connecté ; les politiques RLS des captures et du stockage empêchent l’accès aux non-amis.
+
 La fonction SQL de quota est réservée au rôle serveur : 20 essais par compte et par jour UTC, 450 pour tout le site. Une réservation compte même si le service externe échoue. Les compteurs anciens sont purgés après 7 jours.
 
 ## Fonctions Edge

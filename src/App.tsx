@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { ArrowDownToLine, ArrowRight, Award, BookOpen, Camera, Check, ChevronRight, Compass, Crown, Flower2, Gem, Leaf, LockKeyhole, Map, Search, ShieldCheck, Sparkles, Sprout, Star, TreePine, Trophy, UserRound, WifiOff } from 'lucide-react';
+import { ArrowDownToLine, ArrowRight, Award, BookOpen, Camera, Check, ChevronRight, Compass, Crown, Flower2, Gem, Leaf, LockKeyhole, Map, Search, ShieldCheck, Sparkles, Sprout, Star, TreePine, Trophy, UserRound, Users, WifiOff } from 'lucide-react';
 import { catalog } from './data';
 import { badges, progression, searchMatches, speciesKey, XP_PER_LEVEL } from './game';
 import type { Capture, CatalogPlant } from './types';
@@ -9,18 +9,20 @@ import { loadCollection } from './lib/collection';
 import { PlantArt } from './components/PlantArt';
 import { AuthModal } from './components/AuthModal';
 import { Leaderboard } from './components/Leaderboard';
+import { Friends } from './components/Friends';
 import { Modal } from './components/Modal';
 import { Install } from './components/Install';
 import { Scanner } from './components/Scanner';
 import { Profile } from './components/Profile';
 import { explorerName } from './lib/account';
 
-type Tab = 'home' | 'dex' | 'scan' | 'badges' | 'profile';
+type Tab = 'home' | 'dex' | 'scan' | 'badges' | 'friends' | 'profile';
 const navigation = [
   { id: 'home', label: 'Mon aventure', icon: Compass },
   { id: 'dex', label: 'Plantédex', icon: BookOpen },
   { id: 'scan', label: 'Scanner', icon: Camera },
   { id: 'badges', label: 'Mes badges', icon: Award },
+  { id: 'friends', label: 'Mes amis', icon: Users },
   { id: 'profile', label: 'Mon profil', icon: UserRound },
 ] as const;
 const badgeIcons = { sprout: Sprout, leaf: Leaf, compass: Compass, flower: Flower2, tree: TreePine, award: Award, star: Star, trophy: Trophy, crown: Crown, gem: Gem };
@@ -157,6 +159,7 @@ export default function App() {
         </>}
         {tab === 'scan' && <><PageHeading eyebrow="UNE NOUVELLE RENCONTRE T’ATTEND" title="Ouvre l’œil. Vise une feuille" text="Ton appareil photo est la porte d’entrée vers un monde que tu ne regarderas plus de la même façon." /><Scanner key={userId || 'guest'} user={session?.user ?? null} captures={captures} onAuth={() => setAuthOpen(true)} onSaved={refresh} online={online} /></>}
         {tab === 'badges' && <><PageHeading eyebrow="CHAQUE DÉCOUVERTE TE FAIT GRANDIR" title="Les petites grandes victoires" text="Pas de course contre la montre. Des étapes à franchir, à ton rythme, et la fierté de voir ton jardin grandir." /><section className="badge-summary panel"><span className="stat-icon sand"><Trophy size={28} /></span><div><h3>{earned} badge{earned !== 1 ? 's' : ''} sur {achievements.length} débloqué{earned !== 1 ? 's' : ''}</h3><p>Les badges se gagnent en découvrant des espèces et des familles différentes.</p></div><span className="level-pill">Niveau {stats.level}</span></section><div className="badges-grid">{achievements.map((badge) => { const Icon = badgeIcons[badge.icon]; const unlocked = badge.current >= badge.target; return <article key={badge.id} className={`panel badge-card ${unlocked ? 'unlocked' : ''}`}><span className="badge-state">{unlocked ? <><Check size={13} />Débloqué</> : <><LockKeyhole size={12} />À cultiver</>}</span><div className="badge-medal"><Icon size={34} strokeWidth={1.4} /></div><h3>{badge.name}</h3><p>{badge.description}</p><progress max={badge.target} value={Math.min(badge.current, badge.target)} aria-label={`Progression ${badge.name}`} /><span className="fine">{Math.min(badge.current, badge.target)} / {badge.target}</span></article>; })}</div><Leaderboard user={session?.user ?? null} speciesCount={stats.species} onAuth={() => setAuthOpen(true)} /></>}
+        {tab === 'friends' && <><PageHeading eyebrow="UNE AVENTURE À PARTAGER" title="Tes amis, leurs découvertes" text="Ajoute tes amis par leur pseudo. Leur collection et leurs photos ne seront visibles qu’après acceptation de la demande." /><Friends user={session?.user ?? null} onAuth={() => setAuthOpen(true)} /></>}
         {tab === 'profile' && <><PageHeading eyebrow="L’EXPLORATEUR DERRIÈRE LE CARNET" title="Ton petit coin de nature" text="Retrouve ta progression et garde la main sur tes données." /><Profile user={session?.user ?? null} captures={captures} onAuth={() => setAuthOpen(true)} /></>}
         {!supabase && <div className="setup-banner"><span><Sprout size={18} /><strong>Aperçu du jardin</strong> · Les comptes et le scan seront disponibles après configuration de Supabase et Pl@ntNet.</span><button className="text-button" onClick={() => setAuthOpen(true)}>En savoir plus<ArrowRight size={14} /></button></div>}
         <footer><span><Sprout size={15} /> PokePlant · Cultive ta curiosité.</span><button className="text-button" onClick={() => navigate('profile')}>Respect de la nature & données</button><span>Fait pour explorer, pas pour cueillir.</span></footer>

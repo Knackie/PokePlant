@@ -1,13 +1,13 @@
 import type { Candidate, Capture } from '../types';
 import { requireSupabase } from './supabase';
 
-export async function loadCollection(userId: string): Promise<Capture[]> {
+export async function loadCollection(userId: string, photoUrlTtlSeconds = 3600): Promise<Capture[]> {
   const client = requireSupabase();
   const { data, error } = await client.from('captures').select('*').eq('user_id', userId).order('created_at', { ascending: false });
   if (error) throw error;
   const captures: Capture[] = data ?? [];
   if (!captures.length) return captures;
-  const { data: urls, error: photoError } = await client.storage.from('plant-photos').createSignedUrls(captures.map((capture) => capture.photo_path), 3600);
+  const { data: urls, error: photoError } = await client.storage.from('plant-photos').createSignedUrls(captures.map((capture) => capture.photo_path), photoUrlTtlSeconds);
   if (photoError) throw photoError;
   if (urls?.some((entry) => entry.error)) throw new Error('Certaines photos sont indisponibles. Recharge ta collection ou contacte l’administrateur.');
   const byPath = new Map(urls?.map((entry) => [entry.path, entry.signedUrl]));
