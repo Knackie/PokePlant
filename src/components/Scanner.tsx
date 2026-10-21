@@ -6,6 +6,7 @@ import { preparePhoto } from '../lib/photos';
 import { functionError, requireSupabase } from '../lib/supabase';
 import { isCandidate, saveCapture } from '../lib/collection';
 import { speciesKey } from '../game';
+import { Modal } from './Modal';
 
 export function Scanner({ user, captures, onAuth, onSaved, online }: { user: User | null; captures: Capture[]; onAuth: () => void; onSaved: () => Promise<void>; online: boolean }) {
   const [photo, setPhoto] = useState<File | null>(null);
@@ -17,6 +18,7 @@ export function Scanner({ user, captures, onAuth, onSaved, online }: { user: Use
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
+  const [replacePrompt, setReplacePrompt] = useState(false);
   const [phase, setPhase] = useState('');
   const camera = useRef<HTMLInputElement>(null);
   const mounted = useRef(true);
@@ -28,7 +30,7 @@ export function Scanner({ user, captures, onAuth, onSaved, online }: { user: Use
     return () => URL.revokeObjectURL(value);
   }, [photo]);
 
-  function reset() { setPhoto(null); setCandidates([]); setSelected(null); setSaved(false); setError(''); setConsent(false); }
+  function reset() { setPhoto(null); setCandidates([]); setSelected(null); setSaved(false); setReplacePrompt(false); setError(''); setConsent(false); }
   async function choose(file?: File) {
     if (!file) return;
     setBusy(true); setError(''); setPhase('Préparation de la photo…');
@@ -53,17 +55,18 @@ export function Scanner({ user, captures, onAuth, onSaved, online }: { user: Use
     } catch (error) { if (mounted.current) setError(await functionError(error)); }
     finally { if (mounted.current) setBusy(false); }
   }
-  async function save() {
+  async function save(replaceCaptureId?: string) {
     if (!user || !selected || !photo) return;
     setBusy(true); setError(''); setPhase('Enregistrement dans ton Plantédex…');
     try {
-      await saveCapture(user.id, selected, photo);
+      const cleanupWarning = await saveCapture(user.id, selected, photo, replaceCaptureId);
       if (mounted.current) setSaved(true);
       await onSaved();
+      if (mounted.current && cleanupWarning) setError(cleanupWarning);
     } catch (error) { if (mounted.current) setError(await functionError(error)); }
     finally { if (mounted.current) setBusy(false); }
   }
-  const duplicate = selected && captures.some((capture) => speciesKey(capture.scientific_name) === speciesKey(selected.scientificName));
+  const duplicateCapture = selected && captures.find((capture) => speciesKey(capture.scientific_name) === speciesKey(selected.scientificName));
 
   return <div className="scanner-layout">
     <section className="scan-card panel">
@@ -86,12 +89,19 @@ export function Scanner({ user, captures, onAuth, onSaved, online }: { user: Use
       {candidates.length > 0 && !saved ? <section className="panel candidates"><div className="eyebrow">À TOI DE CONFIRMER</div><h3>On dirait bien…</h3><p className="muted">Ces suggestions peuvent se tromper. Compare les noms et confirme uniquement si la proposition te paraît juste.</p>
         {candidates.map((candidate) => <button key={candidate.scientificName} className={`candidate ${selected?.scientificName === candidate.scientificName ? 'active' : ''}`} onClick={() => setSelected(candidate)} disabled={busy}><span className="candidate-icon"><Leaf size={22} /></span><span><strong>{candidate.commonName || candidate.scientificName}</strong><i>{candidate.scientificName}</i><small>{candidate.family}</small></span><span className="score">{Math.round(candidate.score * 100)} %</span></button>)}
         {selected && selected.score < 0.5 && <p className="notice">Score faible : essaie plutôt une autre photo, bien éclairée et plus proche.</p>}
-        {duplicate && <p className="notice">Tu as déjà découvert cette espèce. Chaque espèce ne rapporte de l’XP qu’une fois.</p>}
-        <button className="button primary full" disabled={!selected || busy || !!duplicate || !online} onClick={save}>Confirmer et capturer <ChevronRight size={17} /></button>
+        {duplicateCapture ? <>
+          <div className="notice duplicate-notice"><strong>Tu as déjà cette plante dans ton Plantédex.</strong><p>Tu peux remplacer l’ancienne photo par celle-ci. Tu garderas ton XP, sans en gagner de nouveau.</p>{duplicateCapture.photoUrl && <img className="duplicate-photo" src={duplicateCapture.photoUrl} alt={`Ancienne photo de ${duplicateCapture.common_name || duplicateCapture.scientific_name}`} />}</div>
+          <button className="button primary full" disabled={busy || !online} onClick={() => setReplacePrompt(true)}>Remplacer l’ancienne photo <RefreshCw size={17} /></button>
+        </> : <button className="button primary full" disabled={!selected || busy || !online} onClick={() => void save()}>Confirmer et capturer <ChevronRight size={17} /></button>}
         <button className="text-button full" onClick={reset} disabled={busy}>Aucune ne correspond : reprendre une photo</button>
       </section> : <section className="panel tips"><span className="tip-icon"><Leaf size={24} /></span><h3>Le secret d’une belle capture</h3><ol><li><strong>Une seule plante</strong><p>Une feuille ou une fleur bien visible, sans la cueillir.</p></li><li><strong>La bonne lumière</strong><p>Évite les ombres fortes et les photos floues.</p></li><li><strong>Un peu de curiosité</strong><p>Regarde les suggestions et choisis celle qui correspond.</p></li></ol></section>}
       <div className="privacy-note"><ShieldCheck size={22} /><p>Ta collection est privée. Les métadonnées de la photo sont retirées avant l’envoi. Aucun GPS collecté.</p></div>
       <p className="fine">Identification propulsée par <a href="https://plantnet.org/" target="_blank" rel="noreferrer">Pl@ntNet</a>. 20 essais par compte et par jour, dans la limite du quota partagé du site. Une identification n’est jamais une preuve de comestibilité ni un conseil médical.</p>
     </aside>
+    {replacePrompt && duplicateCapture && <Modal title="Remplacer cette photo ?" onClose={() => { if (!busy) setReplacePrompt(false); }}>
+      <p>La nouvelle photo remplacera celle de <strong>{duplicateCapture.common_name || duplicateCapture.scientific_name}</strong> dans ton Plantédex. Tu garderas tes XP, sans en gagner de nouveaux.</p>
+      <p className="fine">Si l’enregistrement échoue, l’ancienne photo restera en place.</p>
+      <div className="photo-actions"><button className="button secondary" onClick={() => setReplacePrompt(false)} disabled={busy}>Garder l’ancienne</button><button className="button primary" onClick={() => { setReplacePrompt(false); void save(duplicateCapture.id); }} disabled={busy || !online}>{busy ? 'Remplacement…' : 'Oui, remplacer'}</button></div>
+    </Modal>}
   </div>;
 }

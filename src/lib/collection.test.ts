@@ -2,11 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { isCandidate, loadCollection, saveCapture } from './collection';
 import type { Candidate } from '../types';
 
-const mock = vi.hoisted(() => ({ upload: vi.fn(), remove: vi.fn(), insert: vi.fn(), signedUrls: vi.fn(), select: vi.fn(), eq: vi.fn(), order: vi.fn() }));
+const mock = vi.hoisted(() => ({ upload: vi.fn(), remove: vi.fn(), insert: vi.fn(), rpc: vi.fn(), signedUrls: vi.fn(), select: vi.fn(), eq: vi.fn(), order: vi.fn() }));
 vi.mock('./supabase', () => ({
   requireSupabase: () => ({
     storage: { from: () => ({ upload: mock.upload, remove: mock.remove, createSignedUrls: mock.signedUrls }) },
     from: () => ({ insert: mock.insert, select: mock.select }),
+    rpc: mock.rpc,
   }),
 }));
 const candidate: Candidate = { scientificName: 'Monstera deliciosa', commonName: 'Monstera', family: 'Araceae', score: .95 };
@@ -28,6 +29,7 @@ describe('sauvegarde d’une capture', () => {
     vi.clearAllMocks();
     mock.upload.mockResolvedValue({ error: null });
     mock.insert.mockResolvedValue({ error: null });
+    mock.rpc.mockResolvedValue({ data: 'owner/old-photo.jpg', error: null });
     mock.remove.mockResolvedValue({ error: null });
   });
 
@@ -69,7 +71,7 @@ describe('sauvegarde d’une capture', () => {
     });
   });
   it('enregistre une photo privée et sa fiche sans simuler le succès', async () => {
-    await saveCapture('owner', candidate, photo);
+    expect(await saveCapture('owner', candidate, photo)).toBeNull();
     expect(mock.upload).toHaveBeenCalledWith(expect.stringMatching(/^owner\/[0-9a-f-]+\.jpg$/), photo, { contentType: 'image/jpeg', upsert: false });
     expect(mock.insert).toHaveBeenCalledWith(expect.objectContaining({ user_id: 'owner', scientific_name: candidate.scientificName, score: .95 }));
     expect(mock.remove).not.toHaveBeenCalled();
@@ -88,5 +90,25 @@ describe('sauvegarde d’une capture', () => {
     mock.insert.mockResolvedValue({ error: { code: '400', message: 'base indisponible' } });
     mock.remove.mockResolvedValue({ error: { message: 'stockage indisponible' } });
     await expect(saveCapture('owner', candidate, photo)).rejects.toThrow('Le nettoyage de la photo a échoué');
+  });
+  it('remplace la photo d’une capture existante et garde la collection sans XP supplémentaire', async () => {
+    expect(await saveCapture('owner', candidate, photo, 'capture-id')).toBeNull();
+    expect(mock.rpc).toHaveBeenCalledWith('replace_plant_capture', expect.objectContaining({
+      p_capture_id: 'capture-id',
+      p_scientific_name: candidate.scientificName,
+      p_photo_path: expect.stringMatching(/^owner\/[0-9a-f-]+\.jpg$/),
+    }));
+    expect(mock.remove).toHaveBeenCalledWith(['owner/old-photo.jpg']);
+    expect(mock.insert).not.toHaveBeenCalled();
+  });
+  it('nettoie la nouvelle photo et conserve l’ancienne si le remplacement échoue', async () => {
+    mock.rpc.mockResolvedValue({ data: null, error: new Error('Remplacement refusé') });
+    await expect(saveCapture('owner', candidate, photo, 'capture-id')).rejects.toThrow('Remplacement refusé');
+    expect(mock.remove).toHaveBeenCalledWith([mock.upload.mock.calls[0][0]]);
+  });
+  it('signale explicitement si seule la suppression de l’ancienne photo échoue', async () => {
+    mock.remove.mockResolvedValue({ error: { message: 'Stockage indisponible' } });
+    await expect(saveCapture('owner', candidate, photo, 'capture-id')).resolves.toMatch(/nouvelle photo est enregistrée.*ancienne/i);
+    expect(mock.remove).toHaveBeenCalledWith(['owner/old-photo.jpg']);
   });
 });

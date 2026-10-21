@@ -81,6 +81,10 @@ export interface Database {
       remove_friend: { Args: { p_request_id: string }; Returns: undefined };
       get_friend_connections: { Args: Record<string, never>; Returns: FriendConnection[] };
       are_friends: { Args: { p_user_id: string }; Returns: boolean };
+      replace_plant_capture: {
+        Args: { p_capture_id: string; p_scientific_name: string; p_common_name: string; p_family: string; p_score: number; p_photo_path: string };
+        Returns: string;
+      };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };
