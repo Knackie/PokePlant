@@ -34,7 +34,7 @@ describe('sauvegarde d’une capture', () => {
   });
 
   describe('chargement privé de la collection', () => {
-    const row = { id: 'capture', user_id: 'owner', scientific_name: 'Monstera deliciosa', common_name: 'Monstera', family: 'Araceae', score: .9, species_key: 'monstera deliciosa', photo_path: 'owner/photo.jpg', created_at: '2026-10-20T12:00:00Z' };
+    const row = { id: 'capture', user_id: 'owner', scientific_name: 'Monstera deliciosa', common_name: 'Monstera', family: 'Araceae', score: .9, rarity: 'epic', species_key: 'monstera deliciosa', photo_path: 'owner/photo.jpg', created_at: '2026-10-20T12:00:00Z' };
     beforeEach(() => {
       vi.clearAllMocks();
       mock.select.mockReturnValue({ eq: mock.eq });
@@ -73,8 +73,12 @@ describe('sauvegarde d’une capture', () => {
   it('enregistre une photo privée et sa fiche sans simuler le succès', async () => {
     expect(await saveCapture('owner', candidate, photo)).toBeNull();
     expect(mock.upload).toHaveBeenCalledWith(expect.stringMatching(/^owner\/[0-9a-f-]+\.jpg$/), photo, { contentType: 'image/jpeg', upsert: false });
-    expect(mock.insert).toHaveBeenCalledWith(expect.objectContaining({ user_id: 'owner', scientific_name: candidate.scientificName, score: .95 }));
+    expect(mock.insert).toHaveBeenCalledWith(expect.objectContaining({ user_id: 'owner', scientific_name: candidate.scientificName, score: .95, rarity: 'common' }));
     expect(mock.remove).not.toHaveBeenCalled();
+  });
+  it('enregistre la rareté GBIF utilisée pour calculer les XP', async () => {
+    await saveCapture('owner', candidate, photo, undefined, 'epic');
+    expect(mock.insert).toHaveBeenCalledWith(expect.objectContaining({ rarity: 'epic' }));
   });
   it('arrête la sauvegarde quand le téléversement échoue', async () => {
     mock.upload.mockResolvedValue({ error: new Error('Stockage indisponible') });

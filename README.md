@@ -29,8 +29,8 @@ La suppression complète d’un compte et l’isolation entre deux comptes reste
 - Connexion Google et comptes e-mail/mot de passe, confirmation par mail et réinitialisation via Supabase.
 - Collection synchronisée par Supabase et protégée côté serveur ; les photos ne sont accessibles qu’au propriétaire et à ses amis après acceptation.
 - Ajout d’amis par pseudo, demande à accepter, comparaison des niveaux/XP et consultation des plantes photographiées entre amis acceptés.
-- Une capture par espèce et par compte : rescanner la même espèce permet de remplacer sa photo sans XP supplémentaire. **100 XP par nouvelle espèce**, **300 XP par niveau**, 13 badges.
-- La rareté (commune, insolite, rare, épique) est un classement de jeu fixe sans effet sur les XP ou l’identification ; elle ne décrit pas le statut de conservation réel.
+- Une capture par espèce et par compte : l’XP est fixé à la capture selon sa rareté GBIF (**commune : 100**, **insolite : 150**, **rare : 250**, **épique : 500 XP** ; « À classer » : 100 XP). Rescanner une espèce remplace sa photo sans XP supplémentaire et conserve la rareté gagnée. **300 XP par niveau**, 13 badges.
+- La rareté estimée des plantes est fondée sur le nombre d’observations enregistrées par GBIF en Europe, et non sur les captures des joueurs. Le cache partagé se rafraîchit à l’ouverture de l’application ou lors d’un scan si les données ont plus de sept jours ; sans observation GBIF, la plante reste « À classer ». Les observations ne mesurent pas parfaitement l’abondance et ne constituent pas un statut officiel de conservation.
 - Export JSON du carnet (sans les fichiers photo), déconnexion et suppression du compte et des photos.
 - Manifest, icônes PNG et service worker : installation sur Android/ordinateur et ajout à l’écran d’accueil sur iOS.
 - Le service worker met seulement l’interface en cache, **jamais les réponses API ni les photos privées**. Internet reste nécessaire pour les comptes, les scans et la sauvegarde ; pas de capture hors ligne.
@@ -123,5 +123,5 @@ npm.cmd run icons
 - Pas d’import HEIC : exporter les photos iPhone en JPEG si le navigateur ne les fournit pas déjà ainsi.
 - Une seule capture conservée par nom scientifique normalisé. Pl@ntNet peut utiliser des synonymes botaniques ; des noms distincts ne sont pas automatiquement fusionnés.
 - Classement général (top 10 XP) sur inscription volontaire uniquement : sans anti-triche, l’utilisateur confirme une suggestion. Ce n’est pas une base de preuves scientifiques.
-- Les badges et XP sont calculés depuis la collection actuelle, pas depuis des événements historiques.
+- Les badges et XP sont calculés depuis la collection actuelle, pas depuis des événements historiques. La rareté et l’XP d’une capture sont conservés au moment où elle est ajoutée ; une actualisation ultérieure de GBIF ne modifie pas les récompenses déjà obtenues.
 - Ne pas cueillir les plantes pour jouer ; respecter les propriétés et espaces protégés.

@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { badges, progression, searchMatches, speciesKey } from './game';
 import type { Capture } from './types';
 
-function capture(name: string, family = 'Araceae'): Capture {
-  return { id: name, user_id: 'user', scientific_name: name, common_name: name, family, score: .8, photo_path: `user/${name}.jpg`, species_key: speciesKey(name), created_at: '2026-10-20T12:00:00Z' };
+function capture(name: string, family = 'Araceae', rarity: Capture['rarity'] = 'common'): Capture {
+  return { id: name, user_id: 'user', scientific_name: name, common_name: name, family, score: .8, rarity, photo_path: `user/${name}.jpg`, species_key: speciesKey(name), created_at: '2026-10-20T12:00:00Z' };
 }
 function collection(count: number) { return Array.from({ length: count }, (_, i) => capture(`Species ${i}`, `Family ${i % 3}`)); }
 
@@ -17,6 +17,19 @@ describe('progression de l’explorateur', () => {
   });
   it('ne récompense pas deux fois une même espèce', () => {
     expect(progression([capture('Monstera deliciosa'), capture('  MONSTERA DELICIOSA  ')])).toMatchObject({ species: 1, xp: 100 });
+  });
+  it('récompense davantage les raretés élevées et laisse les plantes non classées à 100 XP', () => {
+    expect(progression([
+      capture('commune', 'A', 'common'),
+      capture('insolite', 'B', 'uncommon'),
+      capture('rare', 'C', 'rare'),
+      capture('épique', 'D', 'epic'),
+      capture('à classer', 'E', 'unclassified'),
+    ])).toMatchObject({ species: 5, xp: 1_100, level: 4, levelXp: 200 });
+  });
+  it('conserve la première récompense si une même espèce est présente plusieurs fois', () => {
+    expect(progression([capture('Monstera deliciosa', 'Araceae', 'common'), capture('MONSTERA DELICIOSA', 'Araceae', 'epic')]))
+      .toMatchObject({ species: 1, xp: 100 });
   });
   it('normalise les familles et ignore les familles vides', () => {
     expect(progression([capture('a', ' Araceae '), capture('b', 'ARACEAE'), capture('c', '')]).families).toBe(1);

@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Camera, Check, ChevronRight, Leaf, LoaderCircle, RefreshCw, ShieldCheck, Sparkles } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
-import type { Candidate, Capture } from '../types';
+import type { Candidate, Capture, PlantRarityRecord } from '../types';
 import { preparePhoto } from '../lib/photos';
 import { functionError, requireSupabase } from '../lib/supabase';
 import { isCandidate, saveCapture } from '../lib/collection';
-import { speciesKey } from '../game';
+import { speciesKey, xpForRarity } from '../game';
+import { loadPlantRarities, rarityLabels, refreshPlantRarities } from '../lib/rarity';
 import { Modal } from './Modal';
 
 export function Scanner({ user, captures, onAuth, onSaved, online }: { user: User | null; captures: Capture[]; onAuth: () => void; onSaved: () => Promise<void>; online: boolean }) {
@@ -15,6 +16,12 @@ export function Scanner({ user, captures, onAuth, onSaved, online }: { user: Use
   const [consent, setConsent] = useState(false);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [selected, setSelected] = useState<Candidate | null>(null);
+  const [rarity, setRarity] = useState<PlantRarityRecord | null>(null);
+  const [rarityLoading, setRarityLoading] = useState(false);
+  const [rarityError, setRarityError] = useState('');
+  const [savedXp, setSavedXp] = useState(0);
+  const [savedRarity, setSavedRarity] = useState<PlantRarityRecord['rarity']>('unclassified');
+  const [replaced, setReplaced] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
@@ -29,8 +36,31 @@ export function Scanner({ user, captures, onAuth, onSaved, online }: { user: Use
     setUrl(value);
     return () => URL.revokeObjectURL(value);
   }, [photo]);
+  useEffect(() => {
+    if (!selected || !user) { setRarity(null); setRarityError(''); setRarityLoading(false); return; }
+    let active = true;
+    setRarity(null);
+    setRarityLoading(true);
+    setRarityError('');
+    void refreshPlantRarities([selected.scientificName])
+      .then((rows) => { if (active) setRarity(rows[0] ?? null); })
+      .catch(async (error: unknown) => {
+        if (!active) return;
+        try {
+          const cachedRows = await loadPlantRarities([selected.scientificName]);
+          if (active && cachedRows[0]) {
+            setRarity(cachedRows[0]);
+            setRarityError(`Mise à jour GBIF indisponible : ${await functionError(error)}`);
+          } else if (active) setRarityError(await functionError(error));
+        } catch (cacheError) {
+          if (active) setRarityError(`${await functionError(error)} ${await functionError(cacheError)}`);
+        }
+      })
+      .finally(() => { if (active) setRarityLoading(false); });
+    return () => { active = false; };
+  }, [selected, user]);
 
-  function reset() { setPhoto(null); setCandidates([]); setSelected(null); setSaved(false); setReplacePrompt(false); setError(''); setConsent(false); }
+  function reset() { setPhoto(null); setCandidates([]); setSelected(null); setSaved(false); setReplacePrompt(false); setError(''); setConsent(false); setRarityLoading(false); setSavedXp(0); setReplaced(false); }
   async function choose(file?: File) {
     if (!file) return;
     setBusy(true); setError(''); setPhase('Préparation de la photo…');
@@ -59,8 +89,15 @@ export function Scanner({ user, captures, onAuth, onSaved, online }: { user: Use
     if (!user || !selected || !photo) return;
     setBusy(true); setError(''); setPhase('Enregistrement dans ton Plantédex…');
     try {
-      const cleanupWarning = await saveCapture(user.id, selected, photo, replaceCaptureId);
-      if (mounted.current) setSaved(true);
+      const captureRarity = rarity?.rarity ?? 'unclassified';
+      const cleanupWarning = await saveCapture(user.id, selected, photo, replaceCaptureId, captureRarity);
+      if (mounted.current) {
+        const preservedRarity = replaceCaptureId ? duplicateCapture?.rarity ?? captureRarity : captureRarity;
+        setSaved(true);
+        setSavedRarity(preservedRarity);
+        setSavedXp(replaceCaptureId ? 0 : xpForRarity(captureRarity));
+        setReplaced(Boolean(replaceCaptureId));
+      }
       await onSaved();
       if (mounted.current && cleanupWarning) setError(cleanupWarning);
     } catch (error) { if (mounted.current) setError(await functionError(error)); }
@@ -83,16 +120,21 @@ export function Scanner({ user, captures, onAuth, onSaved, online }: { user: Use
       </div>}
       {busy && <p role="status" className="busy-line"><LoaderCircle size={18} className="spin" />{phase}</p>}
       {error && <p role="alert" className="error-box">{error}</p>}
-      {saved && <div className="capture-success"><div className="success-circle"><Check size={30} /></div><h3>{selected?.commonName || selected?.scientificName} rejoint ton Plantédex</h3><span className="xp-chip">+100 XP · Nouvelle espèce</span><p>Un petit pas pour toi, une nouvelle feuille dans ton carnet.</p><button className="button primary" onClick={reset}><RefreshCw size={17} />Une autre découverte</button></div>}
+      {saved && <div className="capture-success"><div className="success-circle"><Check size={30} /></div><h3>{replaced ? 'La photo a été remplacée' : `${selected?.commonName || selected?.scientificName} rejoint ton Plantédex`}</h3>{replaced ? <span className="xp-chip">Aucun XP supplémentaire · rareté conservée : {rarityLabels[savedRarity]}</span> : <span className="xp-chip">+{savedXp} XP · {rarityLabels[savedRarity]}</span>}<p>{replaced ? 'Ta progression et la rareté gagnée à la capture restent inchangées.' : 'Plus une plante est rare, plus elle rapporte de XP.'}</p><button className="button primary" onClick={reset}><RefreshCw size={17} />Une autre découverte</button></div>}
     </section>
     <aside className="scan-aside">
       {candidates.length > 0 && !saved ? <section className="panel candidates"><div className="eyebrow">À TOI DE CONFIRMER</div><h3>On dirait bien…</h3><p className="muted">Ces suggestions peuvent se tromper. Compare les noms et confirme uniquement si la proposition te paraît juste.</p>
         {candidates.map((candidate) => <button key={candidate.scientificName} className={`candidate ${selected?.scientificName === candidate.scientificName ? 'active' : ''}`} onClick={() => setSelected(candidate)} disabled={busy}><span className="candidate-icon"><Leaf size={22} /></span><span><strong>{candidate.commonName || candidate.scientificName}</strong><i>{candidate.scientificName}</i><small>{candidate.family}</small></span><span className="score">{Math.round(candidate.score * 100)} %</span></button>)}
         {selected && selected.score < 0.5 && <p className="notice">Score faible : essaie plutôt une autre photo, bien éclairée et plus proche.</p>}
+        {selected && <div className="notice" aria-live="polite">
+          {rarityLoading ? 'Calcul de la rareté à partir des observations GBIF…' : rarity
+            ? <><span className={`rarity-chip rarity-${rarity.rarity}`}><Sparkles size={12} />{rarityLabels[rarity.rarity]} · {xpForRarity(rarity.rarity)} XP</span><p className="fine">{rarity.gbif_occurrences.toLocaleString('fr-FR')} observation{rarity.gbif_occurrences > 1 ? 's' : ''} enregistrée{rarity.gbif_occurrences > 1 ? 's' : ''} en Europe. Classement actualisé au maximum une fois par semaine.</p></>
+            : rarityError ? <span role="alert">La rareté n’a pas pu être calculée : {rarityError}</span> : 'Rareté : à classer.'}
+        </div>}
         {duplicateCapture ? <>
           <div className="notice duplicate-notice"><strong>Tu as déjà cette plante dans ton Plantédex.</strong><p>Tu peux remplacer l’ancienne photo par celle-ci. Tu garderas ton XP, sans en gagner de nouveau.</p>{duplicateCapture.photoUrl && <img className="duplicate-photo" src={duplicateCapture.photoUrl} alt={`Ancienne photo de ${duplicateCapture.common_name || duplicateCapture.scientific_name}`} />}</div>
           <button className="button primary full" disabled={busy || !online} onClick={() => setReplacePrompt(true)}>Remplacer l’ancienne photo <RefreshCw size={17} /></button>
-        </> : <button className="button primary full" disabled={!selected || busy || !online} onClick={() => void save()}>Confirmer et capturer <ChevronRight size={17} /></button>}
+        </> : <button className="button primary full" disabled={!selected || busy || !online || rarityLoading} onClick={() => void save()}>Confirmer et capturer · {rarity ? `${xpForRarity(rarity.rarity)} XP` : '100 XP minimum'} <ChevronRight size={17} /></button>}
         <button className="text-button full" onClick={reset} disabled={busy}>Aucune ne correspond : reprendre une photo</button>
       </section> : <section className="panel tips"><span className="tip-icon"><Leaf size={24} /></span><h3>Le secret d’une belle capture</h3><ol><li><strong>Une seule plante</strong><p>Une feuille ou une fleur bien visible, sans la cueillir.</p></li><li><strong>La bonne lumière</strong><p>Évite les ombres fortes et les photos floues.</p></li><li><strong>Un peu de curiosité</strong><p>Regarde les suggestions et choisis celle qui correspond.</p></li></ol></section>}
       <div className="privacy-note"><ShieldCheck size={22} /><p>Ta collection est privée. Les métadonnées de la photo sont retirées avant l’envoi. Aucun GPS collecté.</p></div>

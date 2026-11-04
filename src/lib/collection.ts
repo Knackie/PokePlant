@@ -1,4 +1,5 @@
 import type { Candidate, Capture } from '../types';
+import type { PlantRarityResult } from '../types';
 import { requireSupabase } from './supabase';
 
 export async function loadCollection(userId: string, photoUrlTtlSeconds = 3600): Promise<Capture[]> {
@@ -18,7 +19,7 @@ export async function loadCollection(userId: string, photoUrlTtlSeconds = 3600):
   });
 }
 
-export async function saveCapture(userId: string, candidate: Candidate, photo: File, replaceCaptureId?: string): Promise<string | null> {
+export async function saveCapture(userId: string, candidate: Candidate, photo: File, replaceCaptureId?: string, rarity: PlantRarityResult = 'common'): Promise<string | null> {
   const client = requireSupabase();
   const path = `${userId}/${crypto.randomUUID()}.jpg`;
   const { error: uploadError } = await client.storage.from('plant-photos').upload(path, photo, { contentType: 'image/jpeg', upsert: false });
@@ -50,6 +51,7 @@ export async function saveCapture(userId: string, candidate: Candidate, photo: F
     common_name: candidate.commonName,
     family: candidate.family,
     score: candidate.score,
+    rarity,
     photo_path: path,
   });
   if (error) {

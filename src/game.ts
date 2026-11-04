@@ -2,15 +2,31 @@ import type { Capture } from './types';
 
 export const XP_PER_SPECIES = 100;
 export const XP_PER_LEVEL = 300;
+export const XP_PER_RARITY = {
+  common: 100,
+  uncommon: 150,
+  rare: 250,
+  epic: 500,
+  unclassified: XP_PER_SPECIES,
+} as const;
+
+export function xpForRarity(rarity: keyof typeof XP_PER_RARITY | null | undefined): number {
+  return XP_PER_RARITY[rarity ?? 'common'];
+}
 
 export function speciesKey(name: string): string {
   return name.trim().toLowerCase();
 }
 
 export function progression(captures: Capture[]) {
-  const species = new Set(captures.map((plant) => speciesKey(plant.scientific_name))).size;
+  const speciesByKey = new Map<string, Capture>();
+  for (const plant of captures) {
+    const key = speciesKey(plant.scientific_name);
+    if (!speciesByKey.has(key)) speciesByKey.set(key, plant);
+  }
+  const species = speciesByKey.size;
   const families = new Set(captures.map((plant) => plant.family.trim().toLowerCase()).filter(Boolean)).size;
-  const xp = species * XP_PER_SPECIES;
+  const xp = [...speciesByKey.values()].reduce((total, plant) => total + xpForRarity(plant.rarity), 0);
   const level = Math.floor(xp / XP_PER_LEVEL) + 1;
   return { species, families, xp, level, levelXp: xp % XP_PER_LEVEL, remaining: XP_PER_LEVEL - (xp % XP_PER_LEVEL) };
 }

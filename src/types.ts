@@ -12,6 +12,7 @@ export interface Capture {
   common_name: string;
   family: string;
   score: number;
+  rarity: PlantRarityResult;
   photo_path: string;
   species_key: string;
   created_at: string;
@@ -45,13 +46,22 @@ export interface FriendConnection {
 }
 
 export type PlantRarity = 'common' | 'uncommon' | 'rare' | 'epic';
+export type PlantRarityResult = PlantRarity | 'unclassified';
+
+export type PlantRarityRecord = {
+  species_key: string;
+  scientific_name: string;
+  gbif_occurrences: number;
+  rarity: PlantRarityResult;
+  checked_at: string;
+}
 
 export interface Database {
   public: {
     Tables: {
       captures: {
         Row: Omit<Capture, 'photoUrl'>;
-        Insert: Pick<Capture, 'user_id' | 'scientific_name' | 'common_name' | 'family' | 'score' | 'photo_path'>;
+        Insert: Pick<Capture, 'user_id' | 'scientific_name' | 'common_name' | 'family' | 'score' | 'rarity' | 'photo_path'>;
         Update: never;
         Relationships: [];
       };
@@ -71,6 +81,12 @@ export interface Database {
         Row: { id: string; sender_id: string; receiver_id: string; accepted_at: string | null; created_at: string };
         Insert: never;
         Update: never;
+        Relationships: [];
+      };
+      plant_rarities: {
+        Row: PlantRarityRecord;
+        Insert: PlantRarityRecord;
+        Update: Partial<PlantRarityRecord>;
         Relationships: [];
       };
     };

@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { ArrowDownToLine, ArrowRight, Award, BookOpen, Camera, Check, ChevronRight, Compass, Crown, Flower2, Gem, Leaf, LockKeyhole, Map, Search, ShieldCheck, Sparkles, Sprout, Star, TreePine, Trophy, UserRound, Users, WifiOff } from 'lucide-react';
-import { catalog, rarityLabels } from './data';
-import { badges, progression, searchMatches, speciesKey, XP_PER_LEVEL } from './game';
-import type { Capture, CatalogPlant } from './types';
+import { catalog } from './data';
+import { badges, progression, searchMatches, speciesKey, xpForRarity, XP_PER_LEVEL } from './game';
+import type { Capture, CatalogPlant, PlantRarityRecord, PlantRarityResult } from './types';
 import { supabase, functionError, requireSupabase } from './lib/supabase';
 import { loadCollection } from './lib/collection';
+import { loadPlantRarities, rarityLabels, rarityOrder, refreshPlantRarities } from './lib/rarity';
 import { PlantArt } from './components/PlantArt';
 import { AuthModal } from './components/AuthModal';
 import { Leaderboard } from './components/Leaderboard';
@@ -34,6 +35,10 @@ export default function App() {
   const [collection, setCollection] = useState<{ owner: string; captures: Capture[] } | null>(null);
   const [collectionLoading, setCollectionLoading] = useState(false);
   const [collectionError, setCollectionError] = useState('');
+  const [plantRarities, setPlantRarities] = useState<Map<string, PlantRarityRecord>>(new globalThis.Map());
+  const [rarityLoading, setRarityLoading] = useState(false);
+  const [rarityError, setRarityError] = useState('');
+  const [rarityRetry, setRarityRetry] = useState(0);
   const [authError, setAuthError] = useState('');
   const [authOpen, setAuthOpen] = useState(false);
   const [detail, setDetail] = useState<CatalogPlant | Capture | null>(null);
@@ -50,6 +55,7 @@ export default function App() {
   const currentUser = useRef(userId);
   currentUser.current = userId;
   const requestId = useRef(0);
+  const rarityRequest = useRef(false);
   const stats = progression(captures);
   const achievements = badges(captures);
   const earned = achievements.filter((badge) => badge.current >= badge.target).length;
@@ -101,6 +107,40 @@ export default function App() {
   }, [userId, refresh]);
 
   useEffect(() => {
+    if (!userId || !collection || collection.owner !== userId) {
+      setPlantRarities(new globalThis.Map());
+      setRarityError('');
+      return;
+    }
+    let active = true;
+    void loadPlantRarities([...catalog.map((plant) => plant.scientificName), ...collection.captures.map((capture) => capture.scientific_name)])
+      .then((rows) => {
+        if (!active) return;
+        setPlantRarities((current) => {
+          const next = new globalThis.Map(current);
+          for (const row of rows) {
+            const existing = next.get(row.species_key);
+            if (!existing || Date.parse(row.checked_at) > Date.parse(existing.checked_at)) next.set(row.species_key, row);
+          }
+          return next;
+        });
+      })
+      .catch(async (error: unknown) => { if (active) setRarityError(await functionError(error)); });
+    return () => { active = false; };
+  }, [userId, collection?.owner, collection?.captures]);
+
+  useEffect(() => {
+    if (!userId || !collection || collection.owner !== userId || rarityRequest.current) return;
+    rarityRequest.current = true;
+    setRarityLoading(true);
+    setRarityError('');
+    void refreshPlantRarities([...catalog.map((plant) => plant.scientificName), ...collection.captures.map((capture) => capture.scientific_name)])
+      .then((rows) => setPlantRarities((current) => new globalThis.Map([...current, ...rows.map((row) => [row.species_key, row] as const)])))
+      .catch(async (error: unknown) => setRarityError(await functionError(error)))
+      .finally(() => { rarityRequest.current = false; setRarityLoading(false); });
+  }, [userId, collection?.owner, collection?.captures, rarityRetry]);
+
+  useEffect(() => {
     function connected() { setOnline(true); if (userId) void refresh(); }
     function disconnected() { setOnline(false); }
     window.addEventListener('online', connected); window.addEventListener('offline', disconnected);
@@ -118,13 +158,27 @@ export default function App() {
     finally { setPasswordBusy(false); }
   }
 
-  const collectedKeys = new Set(captures.map((capture) => speciesKey(capture.scientific_name)));
+  const captureByKey = new globalThis.Map(captures.map((capture) => [speciesKey(capture.scientific_name), capture]));
+  const collectedKeys = new Set(captureByKey.keys());
   const photoByKey = new globalThis.Map(captures.map((capture): [string, string | undefined] => [speciesKey(capture.scientific_name), capture.photoUrl]));
   const visibleCatalog = catalog.filter((plant) => searchMatches([plant.name, plant.scientificName, plant.family], query) && (filter === 'all' || (filter === 'collected') === collectedKeys.has(speciesKey(plant.scientificName))));
   const extraCaptures = captures.filter((capture) => !catalog.some((plant) => speciesKey(plant.scientificName) === speciesKey(capture.scientific_name)) && filter !== 'discover' && searchMatches([capture.common_name, capture.scientific_name, capture.family], query));
+  const rarityFor = (name: string, fallback: PlantRarityResult = 'unclassified') => plantRarities.get(speciesKey(name))?.rarity ?? fallback;
+  const dexEntries = [
+    ...visibleCatalog.map((plant) => ({ kind: 'catalog' as const, plant, rarity: captureByKey.get(speciesKey(plant.scientificName))?.rarity ?? rarityFor(plant.scientificName, session ? 'unclassified' : plant.rarity) })),
+    ...extraCaptures.map((capture) => ({ kind: 'capture' as const, capture, rarity: capture.rarity })),
+  ].sort((a, b) => rarityOrder[a.rarity] - rarityOrder[b.rarity]
+    || (a.kind === b.kind ? 0 : a.kind === 'catalog' ? -1 : 1)
+    || (a.kind === 'catalog' ? a.plant.name.localeCompare(b.kind === 'catalog' ? b.plant.name : b.capture.common_name, 'fr') : a.capture.common_name.localeCompare(b.kind === 'capture' ? b.capture.common_name : b.plant.name, 'fr')));
+  const detailRarityRecord = detail
+    ? plantRarities.get(speciesKey('scientificName' in detail ? detail.scientificName : detail.scientific_name))
+    : undefined;
+  const detailCapture = detail
+    ? 'scientificName' in detail ? captureByKey.get(speciesKey(detail.scientificName)) : detail
+    : undefined;
   const detailRarity = detail && ('scientificName' in detail
-    ? detail.rarity
-    : catalog.find((plant) => speciesKey(plant.scientificName) === speciesKey(detail.scientific_name))?.rarity);
+    ? detailCapture?.rarity ?? rarityFor(detail.scientificName, session ? 'unclassified' : detail.rarity)
+    : detail.rarity);
 
   return <div className="app-shell">
     <aside className="sidebar">
@@ -150,16 +204,20 @@ export default function App() {
             <div className="hero-art"><div className="orbit orbit-one" /><div className="orbit orbit-two" /><span className="art-cross cross-one">+</span><span className="art-cross cross-two">+</span><div className="hero-plant-card"><div className="art-card-top"><span>SPÉCIMEN N° 001</span><Leaf size={16} /></div><PlantArt shape="split" color="#3b714d" /><div className="art-card-bottom"><span>Monstera deliciosa<small>À découvrir près de toi</small></span><span className="art-stamp"><Sprout size={21} /></span></div></div><div className="floating-label label-top"><span className="round-lime"><Check size={15} /></span>Chaque plante a son histoire.</div><div className="floating-label label-bottom"><Sparkles size={17} /><span>Ta première découverte<strong>+100 XP à la clé</strong></span></div><span className="art-caption">OBSERVE. DÉCOUVRE. ÉMERVEILLE-TOI.</span></div>
           </section>
           <section className="stats-grid" aria-label="Ta progression"><div className="stat-card"><span className="stat-icon sage"><BookOpen size={22} /></span><div><strong>{stats.species}<small>espèce{stats.species !== 1 ? 's' : ''}</small></strong><span>Dans ton Plantédex</span></div><span className="stat-detail">Chaque rencontre compte</span></div><div className="stat-card"><span className="stat-icon sand"><Trophy size={22} /></span><div><strong>{earned}<small>/ {achievements.length}</small></strong><span>Badges débloqués</span></div><button className="stat-link" onClick={() => navigate('badges')} aria-label="Voir mes badges"><ArrowRight size={17} /></button></div><div className="stat-card level-card"><span className="stat-icon lavender"><Sprout size={23} /></span><div className="level-body"><div className="level-row"><strong>Niveau {stats.level}</strong><span>{stats.levelXp} / {XP_PER_LEVEL} XP</span></div><progress max={XP_PER_LEVEL} value={stats.levelXp} aria-label="Progression vers le niveau suivant" /><span>Encore {stats.remaining} XP pour grandir</span></div></div></section>
-          <div className="home-lower"><section className="discover-section"><div className="section-heading"><div><div className="eyebrow">IL Y A TANT À DÉCOUVRIR</div><h2>De futures rencontres</h2></div><button className="text-button" onClick={() => navigate('dex')}>Ouvrir le Plantédex<ArrowRight size={16} /></button></div><div className="preview-grid">{catalog.slice(0, 3).map((plant) => <PlantCard key={plant.id} plant={plant} collected={collectedKeys.has(speciesKey(plant.scientificName))} photoUrl={photoByKey.get(speciesKey(plant.scientificName))} onClick={() => setDetail(plant)} />)}</div></section><section className="daily-tip"><span className="eyebrow"><Sparkles size={14} /> LA PAUSE NATURE</span><span className="tip-quotation">«</span><h3>Pas besoin d’aller loin<br />pour s’émerveiller.</h3><p>Un balcon, un parc, le bord d’un chemin… Regarde autour de toi : ton aventure est déjà là.</p><div className="tip-bottom"><Leaf size={18} /><span>Photographie sans cueillir.</span></div></section></div>
+          <div className="home-lower"><section className="discover-section"><div className="section-heading"><div><div className="eyebrow">IL Y A TANT À DÉCOUVRIR</div><h2>De futures rencontres</h2></div><button className="text-button" onClick={() => navigate('dex')}>Ouvrir le Plantédex<ArrowRight size={16} /></button></div><div className="preview-grid">{catalog.slice(0, 3).map((plant) => <PlantCard key={plant.id} plant={plant} rarity={rarityFor(plant.scientificName, session ? 'unclassified' : plant.rarity)} collected={collectedKeys.has(speciesKey(plant.scientificName))} photoUrl={photoByKey.get(speciesKey(plant.scientificName))} onClick={() => setDetail(plant)} />)}</div></section><section className="daily-tip"><span className="eyebrow"><Sparkles size={14} /> LA PAUSE NATURE</span><span className="tip-quotation">«</span><h3>Pas besoin d’aller loin<br />pour s’émerveiller.</h3><p>Un balcon, un parc, le bord d’un chemin… Regarde autour de toi : ton aventure est déjà là.</p><div className="tip-bottom"><Leaf size={18} /><span>Photographie sans cueillir.</span></div></section></div>
           {!session && <section className="join-strip"><span className="join-icon"><Map size={26} /></span><div><h3>Un carnet rien qu’à toi.</h3><p>Crée ton compte pour sauvegarder tes plantes et faire grandir ta collection.</p></div><button className="button secondary" onClick={() => setAuthOpen(true)}>Commencer gratuitement<ArrowRight size={16} /></button></section>}
         </>}
 
         {tab === 'dex' && <>
           <PageHeading eyebrow="LES PETITES MERVEILLES DU QUOTIDIEN" title="Ton Plantédex" text="Un carnet vivant, une histoire derrière chaque feuille. Les 43 fiches de départ ne sont qu’un début : toute espèce reconnue peut rejoindre ta collection." />
           <div className="dex-toolbar"><div className="segmented"><button className={filter === 'all' ? 'selected' : ''} onClick={() => setFilter('all')}>Tout explorer</button><button className={filter === 'collected' ? 'selected' : ''} onClick={() => setFilter('collected')}>Mes captures ({stats.species})</button><button className={filter === 'discover' ? 'selected' : ''} onClick={() => setFilter('discover')}>À découvrir</button></div><label className="search-field"><Search size={18} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Un nom, une famille…" aria-label="Rechercher une plante" /></label></div>
-          <div className="rarity-legend" aria-label="Rareté de jeu"><span>Rareté de jeu :</span>{(['common', 'uncommon', 'rare', 'epic'] as const).map((rarity) => <span className={`rarity-chip rarity-${rarity}`} key={rarity}><Sparkles size={12} />{rarityLabels[rarity]}</span>)}</div>
-          {(visibleCatalog.length + extraCaptures.length) > 0 ? <div className="dex-grid">{visibleCatalog.map((plant) => <PlantCard key={plant.id} plant={plant} collected={collectedKeys.has(speciesKey(plant.scientificName))} photoUrl={photoByKey.get(speciesKey(plant.scientificName))} onClick={() => setDetail(plant)} />)}{extraCaptures.map((capture) => <CaptureCard key={capture.id} capture={capture} onClick={() => setDetail(capture)} />)}</div> : <EmptyState icon="leaf" title={filter === 'collected' && !query ? 'Ton carnet attend sa première feuille' : 'Aucune plante par ici'} text={filter === 'collected' ? 'Scanne ta première plante et confirme son identification pour commencer ta collection.' : 'Essaie un autre nom ou change de filtre.'} onClick={() => navigate('scan')} button="Scanner une plante" />}
-          <div className="catalog-note"><Leaf size={18} /><p>La rareté est un classement ludique propre à PokePlant : elle ne modifie ni les XP ni l’identification, et ne représente pas le statut de protection réel des plantes. Les illustrations ne sont pas des références d’identification.</p></div>
+          <div className="rarity-legend" aria-label="Rareté et expérience gagnée"><span>Plus la plante est rare, plus elle rapporte :</span>{(['epic', 'rare', 'uncommon', 'common', 'unclassified'] as const).map((rarity) => <span className={`rarity-chip rarity-${rarity}`} key={rarity}><Sparkles size={12} />{rarityLabels[rarity]} · {xpForRarity(rarity)} XP</span>)}</div>
+          {rarityLoading && <p className="loading-status" role="status">Mise à jour des raretés depuis les observations européennes de GBIF…</p>}
+          {rarityError && <p className="error-box" role="alert">Impossible d’actualiser certaines raretés : {rarityError}<button className="text-button" onClick={() => setRarityRetry((value) => value + 1)}>Réessayer</button></p>}
+          {(visibleCatalog.length + extraCaptures.length) > 0 ? <div className="dex-grid">{dexEntries.map((entry) => entry.kind === 'catalog'
+            ? <PlantCard key={entry.plant.id} plant={entry.plant} rarity={entry.rarity} collected={collectedKeys.has(speciesKey(entry.plant.scientificName))} photoUrl={photoByKey.get(speciesKey(entry.plant.scientificName))} onClick={() => setDetail(entry.plant)} />
+            : <CaptureCard key={entry.capture.id} capture={entry.capture} rarity={entry.rarity} onClick={() => setDetail(entry.capture)} />)}</div> : <EmptyState icon="leaf" title={filter === 'collected' && !query ? 'Ton carnet attend sa première feuille' : 'Aucune plante par ici'} text={filter === 'collected' ? 'Scanne ta première plante et confirme son identification pour commencer ta collection.' : 'Essaie un autre nom ou change de filtre.'} onClick={() => navigate('scan')} button="Scanner une plante" />}
+          <div className="catalog-note"><Leaf size={18} /><p>Classement ludique basé sur le nombre d’observations enregistrées par GBIF en Europe : moins de 100 = épique, 100–999 = rare, 1 000–9 999 = insolite et 10 000 ou plus = commune. Sans observation, la plante reste « À classer ». Les observations ne mesurent pas parfaitement l’abondance réelle et ce classement n’est ni une identification ni un statut officiel de conservation. Les fiches s’actualisent à leur consultation si leur cache date de plus de sept jours. <a href="https://www.gbif.org/" target="_blank" rel="noreferrer">Source : GBIF</a>. Les illustrations ne sont pas des références d’identification.</p></div>
         </>}
         {tab === 'scan' && <><PageHeading eyebrow="UNE NOUVELLE RENCONTRE T’ATTEND" title="Ouvre l’œil. Vise une feuille" text="Ton appareil photo est la porte d’entrée vers un monde que tu ne regarderas plus de la même façon." /><Scanner key={userId || 'guest'} user={session?.user ?? null} captures={captures} onAuth={() => setAuthOpen(true)} onSaved={refresh} online={online} /></>}
         {tab === 'badges' && <><PageHeading eyebrow="CHAQUE DÉCOUVERTE TE FAIT GRANDIR" title="Les petites grandes victoires" text="Pas de course contre la montre. Des étapes à franchir, à ton rythme, et la fierté de voir ton jardin grandir." /><section className="badge-summary panel"><span className="stat-icon sand"><Trophy size={28} /></span><div><h3>{earned} badge{earned !== 1 ? 's' : ''} sur {achievements.length} débloqué{earned !== 1 ? 's' : ''}</h3><p>Les badges se gagnent en découvrant des espèces et des familles différentes.</p></div><span className="level-pill">Niveau {stats.level}</span></section><div className="badges-grid">{achievements.map((badge) => { const Icon = badgeIcons[badge.icon]; const unlocked = badge.current >= badge.target; return <article key={badge.id} className={`panel badge-card ${unlocked ? 'unlocked' : ''}`}><span className="badge-state">{unlocked ? <><Check size={13} />Débloqué</> : <><LockKeyhole size={12} />À cultiver</>}</span><div className="badge-medal"><Icon size={34} strokeWidth={1.4} /></div><h3>{badge.name}</h3><p>{badge.description}</p><progress max={badge.target} value={Math.min(badge.current, badge.target)} aria-label={`Progression ${badge.name}`} /><span className="fine">{Math.min(badge.current, badge.target)} / {badge.target}</span></article>; })}</div><Leaderboard user={session?.user ?? null} speciesCount={stats.species} onAuth={() => setAuthOpen(true)} /></>}
@@ -172,7 +230,27 @@ export default function App() {
     <nav className="mobile-nav" aria-label="Navigation mobile">{navigation.map(({ id, label, icon: Icon }) => <button key={id} className={tab === id ? 'active' : ''} aria-current={tab === id ? 'page' : undefined} onClick={() => navigate(id)}><Icon size={21} /><span>{label}</span></button>)}</nav>
     {authOpen && <AuthModal onClose={() => setAuthOpen(false)} />}
     {detail && <Modal title={'scientificName' in detail ? detail.name : detail.common_name || detail.scientific_name} onClose={() => setDetail(null)}>
-      {'scientificName' in detail ? <>{collectedKeys.has(speciesKey(detail.scientificName)) && photoByKey.get(speciesKey(detail.scientificName)) ? <img className="detail-photo" src={photoByKey.get(speciesKey(detail.scientificName))} alt={detail.name} /> : <div className="detail-art"><PlantArt shape={detail.shape} color={detail.color} /></div>}<div className="detail-status">{collectedKeys.has(speciesKey(detail.scientificName)) ? <><Check size={15} />Espèce capturée</> : <><Compass size={15} />Une future rencontre</>}</div><span className={`rarity-chip detail-rarity rarity-${detail.rarity}`}><Sparkles size={14} />Rareté de jeu · {rarityLabels[detail.rarity]}</span><p className="latin">{detail.scientificName}</p><div className="detail-info"><span>Famille<strong>{detail.family}</strong></span><span>Habitat<strong>{detail.habitat}</strong></span></div><p>{detail.description}</p><button className="button primary full" onClick={() => { setDetail(null); navigate('scan'); }}><Camera size={17} />Partir à sa rencontre</button></> : <>{detail.photoUrl && <img className="detail-photo" src={detail.photoUrl} alt={detail.common_name || detail.scientific_name} />}{detailRarity && <span className={`rarity-chip detail-rarity rarity-${detailRarity}`}><Sparkles size={14} />Rareté de jeu · {rarityLabels[detailRarity]}</span>}<p className="latin">{detail.scientific_name}</p><div className="detail-info"><span>Famille<strong>{detail.family}</strong></span><span>Rencontrée le<strong>{new Date(detail.created_at).toLocaleDateString('fr-FR')}</strong></span></div><p className="success-box"><Check size={17} />Dans ton Plantédex · +100 XP</p><p className="fine">Proposition Pl@ntNet confirmée par toi. Score indicatif : {Math.round(detail.score * 100)} %. Une identification peut être erronée.</p></>}
+      {'scientificName' in detail ? <>
+        {collectedKeys.has(speciesKey(detail.scientificName)) && photoByKey.get(speciesKey(detail.scientificName))
+          ? <img className="detail-photo" src={photoByKey.get(speciesKey(detail.scientificName))} alt={detail.name} />
+          : <div className="detail-art"><PlantArt shape={detail.shape} color={detail.color} /></div>}
+        <div className="detail-status">{collectedKeys.has(speciesKey(detail.scientificName)) ? <><Check size={15} />Espèce capturée</> : <><Compass size={15} />Une future rencontre</>}</div>
+        <span className={`rarity-chip detail-rarity rarity-${detailRarity ?? 'unclassified'}`}><Sparkles size={14} />{detailCapture ? 'Rareté à la capture' : detailRarityRecord ? 'Rareté GBIF' : 'Rareté de jeu'} · {rarityLabels[detailRarity ?? 'unclassified']}</span>
+        {!detailCapture && detailRarityRecord && <p className="fine">{detailRarityRecord.gbif_occurrences.toLocaleString('fr-FR')} observation{detailRarityRecord.gbif_occurrences > 1 ? 's' : ''} enregistrée{detailRarityRecord.gbif_occurrences > 1 ? 's' : ''} en Europe · vérifiée le {new Date(detailRarityRecord.checked_at).toLocaleDateString('fr-FR')}.</p>}
+        {detailCapture && <p className="success-box"><Check size={17} />Dans ton Plantédex · +{xpForRarity(detailCapture.rarity)} XP</p>}
+        <p className="latin">{detail.scientificName}</p>
+        <div className="detail-info"><span>Famille<strong>{detail.family}</strong></span><span>Habitat<strong>{detail.habitat}</strong></span></div>
+        <p>{detail.description}</p>
+        <button className="button primary full" onClick={() => { setDetail(null); navigate('scan'); }}><Camera size={17} />Partir à sa rencontre</button>
+      </> : <>
+        {detail.photoUrl && <img className="detail-photo" src={detail.photoUrl} alt={detail.common_name || detail.scientific_name} />}
+        {detailRarity && <span className={`rarity-chip detail-rarity rarity-${detailRarity}`}><Sparkles size={14} />Rareté à la capture · {rarityLabels[detailRarity]}</span>}
+        <p className="fine">Rareté et XP fixés au moment de la capture.</p>
+        <p className="latin">{detail.scientific_name}</p>
+        <div className="detail-info"><span>Famille<strong>{detail.family}</strong></span><span>Rencontrée le<strong>{new Date(detail.created_at).toLocaleDateString('fr-FR')}</strong></span></div>
+        <p className="success-box"><Check size={17} />Dans ton Plantédex · +{xpForRarity(detail.rarity)} XP</p>
+        <p className="fine">Proposition Pl@ntNet confirmée par toi. Score indicatif : {Math.round(detail.score * 100)} %. Une identification peut être erronée.</p>
+      </>}
       <p className="fine warning-note">Ne mange jamais une plante sur la base d’une photo ou d’une identification automatique.</p>
     </Modal>}
     {recovery && <Modal title="Choisir un nouveau mot de passe" onClose={() => { if (!passwordBusy) setRecovery(false); }}><form className="form-stack" onSubmit={updatePassword}><label>Nouveau mot de passe<input type="password" autoComplete="new-password" minLength={8} maxLength={128} value={newPassword} onChange={(event) => setNewPassword(event.target.value)} required /></label>{passwordError && <p className="error-box" role="alert">{passwordError}</p>}<button className="button primary" disabled={passwordBusy}>{passwordBusy ? 'Enregistrement…' : 'Enregistrer le mot de passe'}</button></form></Modal>}
@@ -182,11 +260,11 @@ export default function App() {
 function PageHeading({ eyebrow, title, text }: { eyebrow: string; title: string; text: string }) {
   return <div className="page-heading secondary-heading"><div><div className="eyebrow">{eyebrow}</div><h1>{title}<span className="heading-dot">.</span></h1><p>{text}</p></div></div>;
 }
-function PlantCard({ plant, collected, photoUrl, onClick }: { plant: CatalogPlant; collected: boolean; photoUrl?: string; onClick: () => void }) {
-  return <button className={`plant-card ${collected ? 'collected' : ''}`} onClick={onClick}><div className="plant-card-art"><span className="plant-number">N° {plant.id.padStart(3, '0')}</span><span className={`plant-status ${collected ? 'captured' : ''}`} aria-label={collected ? 'Capturée' : 'À découvrir'}>{collected ? <Check size={14} /> : <Compass size={14} />}</span>{collected && photoUrl ? <img src={photoUrl} alt={plant.name} loading="lazy" /> : <PlantArt shape={plant.shape} color={plant.color} />}</div><div className="plant-card-info"><div className="plant-meta"><span className="plant-family">{plant.family}</span><span className={`rarity-chip rarity-${plant.rarity}`}><Sparkles size={11} />{rarityLabels[plant.rarity]}</span></div><h3>{plant.name}</h3><p>{plant.scientificName}</p><div className="card-bottom"><span>{collected ? 'Dans ton carnet' : 'À découvrir'}</span><ArrowRight size={15} /></div></div></button>;
+function PlantCard({ plant, rarity, collected, photoUrl, onClick }: { plant: CatalogPlant; rarity: PlantRarityResult; collected: boolean; photoUrl?: string; onClick: () => void }) {
+  return <button className={`plant-card ${collected ? 'collected' : ''}`} onClick={onClick}><div className="plant-card-art"><span className="plant-number">N° {plant.id.padStart(3, '0')}</span><span className={`plant-status ${collected ? 'captured' : ''}`} aria-label={collected ? 'Capturée' : 'À découvrir'}>{collected ? <Check size={14} /> : <Compass size={14} />}</span>{collected && photoUrl ? <img src={photoUrl} alt={plant.name} loading="lazy" /> : <PlantArt shape={plant.shape} color={plant.color} />}</div><div className="plant-card-info"><div className="plant-meta"><span className="plant-family">{plant.family}</span><span className={`rarity-chip rarity-${rarity}`}><Sparkles size={11} />{rarityLabels[rarity]}</span></div><h3>{plant.name}</h3><p>{plant.scientificName}</p><div className="card-bottom"><span>{collected ? 'Dans ton carnet' : 'À découvrir'}</span><ArrowRight size={15} /></div></div></button>;
 }
-function CaptureCard({ capture, onClick }: { capture: Capture; onClick: () => void }) {
-  return <button className="plant-card collected" onClick={onClick}><div className="plant-card-art capture-art">{capture.photoUrl ? <img src={capture.photoUrl} alt={capture.common_name} loading="lazy" /> : <PlantArt />}<span className="plant-status captured"><Check size={14} /></span></div><div className="plant-card-info"><span className="plant-family">{capture.family}</span><h3>{capture.common_name || capture.scientific_name}</h3><p>{capture.scientific_name}</p><div className="card-bottom"><span>Dans ton carnet</span><ArrowRight size={15} /></div></div></button>;
+function CaptureCard({ capture, rarity, onClick }: { capture: Capture; rarity: PlantRarityResult; onClick: () => void }) {
+  return <button className="plant-card collected" onClick={onClick}><div className="plant-card-art capture-art">{capture.photoUrl ? <img src={capture.photoUrl} alt={capture.common_name} loading="lazy" /> : <PlantArt />}<span className="plant-status captured"><Check size={14} /></span></div><div className="plant-card-info"><div className="plant-meta"><span className="plant-family">{capture.family}</span><span className={`rarity-chip rarity-${rarity}`}><Sparkles size={11} />{rarityLabels[rarity]}</span></div><h3>{capture.common_name || capture.scientific_name}</h3><p>{capture.scientific_name}</p><div className="card-bottom"><span>Dans ton carnet</span><ArrowRight size={15} /></div></div></button>;
 }
 function EmptyState({ title, text, onClick, button }: { icon: string; title: string; text: string; onClick: () => void; button: string }) {
   return <div className="empty-state panel"><Sprout size={48} strokeWidth={1.2} /><h2>{title}</h2><p>{text}</p><button className="button primary" onClick={onClick}>{button}<ArrowDownToLine size={17} /></button></div>;
