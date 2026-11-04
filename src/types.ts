@@ -44,6 +44,8 @@ export interface FriendConnection {
   level: number;
 }
 
+export type PlantRarity = 'common' | 'uncommon' | 'rare' | 'epic';
+
 export interface Database {
   public: {
     Tables: {
@@ -100,4 +102,5 @@ export interface CatalogPlant {
   description: string;
   shape: 'split' | 'round' | 'spike' | 'flower' | 'fern';
   color: string;
+  rarity: PlantRarity;
 }

@@ -1,6 +1,6 @@
-import type { CatalogPlant } from './types';
+import type { CatalogPlant, PlantRarity } from './types';
 
-export const catalog: CatalogPlant[] = [
+const starterCatalog: Omit<CatalogPlant, 'rarity'>[] = [
   { id: '01', name: 'Monstera', scientificName: 'Monstera deliciosa', family: 'Araceae', habitat: 'Forêts tropicales', shape: 'split', color: '#55775b', description: 'Ses grandes feuilles découpées laissent passer la lumière et la pluie. Dans la nature, cette liane grimpe sur les arbres des forêts d’Amérique centrale.' },
   { id: '02', name: 'Pilea', scientificName: 'Pilea peperomioides', family: 'Urticaceae', habitat: 'Sous-bois de Chine', shape: 'round', color: '#749368', description: 'On la reconnaît à ses feuilles rondes, portées comme de petits parasols. Elle produit des rejets à sa base, ce qui lui vaut son surnom de plante de l’amitié.' },
   { id: '03', name: 'Aloe vera', scientificName: 'Aloe vera', family: 'Asphodelaceae', habitat: 'Milieux arides', shape: 'spike', color: '#739480', description: 'Ses feuilles charnues stockent de l’eau, une adaptation aux milieux secs. Observer une plante ne permet pas de garantir qu’elle est comestible ou médicinale.' },
@@ -45,3 +45,62 @@ export const catalog: CatalogPlant[] = [
   { id: '42', name: 'Fraisier', scientificName: 'Fragaria × ananassa', family: 'Rosaceae', habitat: 'Potagers et jardins', shape: 'flower', color: '#c76672', description: 'Ses fleurs blanches sont suivies de fruits rouges parfumés. Le fraisier se propage aussi grâce à de longues tiges rampantes appelées stolons.' },
   { id: '43', name: 'Pois cultivé', scientificName: 'Pisum sativum', family: 'Fabaceae', habitat: 'Potagers et champs', shape: 'spike', color: '#79a35a', description: 'Cette plante grimpante s’accroche aux supports avec ses vrilles. Comme d’autres légumineuses, elle vit en association avec des bactéries du sol.' },
 ];
+
+const rarityById: Record<string, PlantRarity> = {
+  '01': 'epic',
+  '02': 'uncommon',
+  '03': 'uncommon',
+  '04': 'common',
+  '05': 'uncommon',
+  '06': 'common',
+  '07': 'common',
+  '08': 'common',
+  '09': 'rare',
+  '10': 'uncommon',
+  '11': 'rare',
+  '12': 'common',
+  '13': 'uncommon',
+  '14': 'common',
+  '15': 'common',
+  '16': 'common',
+  '17': 'common',
+  '18': 'common',
+  '19': 'rare',
+  '20': 'common',
+  '21': 'rare',
+  '22': 'common',
+  '23': 'common',
+  '24': 'common',
+  '25': 'epic',
+  '26': 'uncommon',
+  '27': 'common',
+  '28': 'common',
+  '29': 'common',
+  '30': 'uncommon',
+  '31': 'uncommon',
+  '32': 'uncommon',
+  '33': 'uncommon',
+  '34': 'uncommon',
+  '35': 'rare',
+  '36': 'rare',
+  '37': 'epic',
+  '38': 'common',
+  '39': 'common',
+  '40': 'common',
+  '41': 'common',
+  '42': 'uncommon',
+  '43': 'common',
+};
+
+export const rarityLabels: Record<PlantRarity, string> = {
+  common: 'Commune',
+  uncommon: 'Insolite',
+  rare: 'Rare',
+  epic: 'Épique',
+};
+
+export const catalog: CatalogPlant[] = starterCatalog.map((plant) => {
+  const rarity = rarityById[plant.id];
+  if (!rarity) throw new Error(`Rareté manquante pour la fiche ${plant.id}.`);
+  return { ...plant, rarity };
+});

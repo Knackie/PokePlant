@@ -12,7 +12,7 @@ Le site est publié sur Netlify depuis la branche `main` et servi sur `https://p
 
 Parcours validés les 20 et 21 octobre 2026 :
 
-- Compilation de production et 55 tests unitaires réussis.
+- Compilation de production et 58 tests unitaires réussis.
 - Connexion Google, identification réelle et capture conservée après rechargement, confirmées par le propriétaire sur l’aperçu local.
 - Connexion Google sur le site public et récupération de la même collection sur téléphone, confirmées par le propriétaire.
 - Inscription par e-mail avec SMTP Resend et réception du mail de confirmation, confirmées par le propriétaire.
@@ -22,7 +22,7 @@ La suppression complète d’un compte et l’isolation entre deux comptes reste
 
 ## Ce qui est inclus
 
-- Accueil « carnet d’explorateur », 43 fiches botaniques de départ, dont six plantes du potager, recherche sans accents et filtres.
+- Accueil « carnet d’explorateur », 43 fiches botaniques de départ, dont six plantes du potager, rareté ludique, recherche sans accents et filtres.
 - Captures de **toute espèce reconnue**, pas seulement les 43 fiches de départ.
 - Photo prise avec l’appareil photo uniquement (pas d’import depuis la galerie) ; conversion JPEG, réduction à 1600 px maximum et retrait des métadonnées avant envoi.
 - Consentement à l’envoi vers Pl@ntNet, jusqu’à 5 suggestions et confirmation explicite. Aucune identification fictive.
@@ -30,6 +30,7 @@ La suppression complète d’un compte et l’isolation entre deux comptes reste
 - Collection synchronisée par Supabase et protégée côté serveur ; les photos ne sont accessibles qu’au propriétaire et à ses amis après acceptation.
 - Ajout d’amis par pseudo, demande à accepter, comparaison des niveaux/XP et consultation des plantes photographiées entre amis acceptés.
 - Une capture par espèce et par compte : rescanner la même espèce permet de remplacer sa photo sans XP supplémentaire. **100 XP par nouvelle espèce**, **300 XP par niveau**, 13 badges.
+- La rareté (commune, insolite, rare, épique) est un classement de jeu fixe sans effet sur les XP ou l’identification ; elle ne décrit pas le statut de conservation réel.
 - Export JSON du carnet (sans les fichiers photo), déconnexion et suppression du compte et des photos.
 - Manifest, icônes PNG et service worker : installation sur Android/ordinateur et ajout à l’écran d’accueil sur iOS.
 - Le service worker met seulement l’interface en cache, **jamais les réponses API ni les photos privées**. Internet reste nécessaire pour les comptes, les scans et la sauvegarde ; pas de capture hors ligne.
